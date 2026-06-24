@@ -1,0 +1,10 @@
+node_modules/
+.next/
+.env
+.env.local
+__pycache__/
+*.pyc
+apps/api/.venv/
+.DS_Store
+apps/mobile/.expo/
+apps/mobile/node_modules/

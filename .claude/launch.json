@@ -1,0 +1,13 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "analysight-web",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "cwd": "/Users/huseyinakpinar/Documents/analysight_v2/apps/web",
+      "port": 3000,
+      "autoPort": true
+    }
+  ]
+}
