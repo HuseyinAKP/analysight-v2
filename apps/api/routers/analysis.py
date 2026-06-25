@@ -531,7 +531,9 @@ def _claude_prompt_analyze(ctx: dict, prompt_type: str) -> Optional[str]:
             messages=[{"role": "user", "content": prompt}],
         )
         return msg.content[0].text.strip()
-    except Exception:
+    except Exception as e:
+        import logging
+        logging.error(f"Claude API error: {e}")
         return None
 
 
