@@ -199,6 +199,42 @@ def get_kap_disclosures(symbol: str, limit: int = 10):
     # yfinance haberleri çek
     news = _yfinance_news(symbol)
 
+    # RSS haberleri — ücretsiz, gerçek zaman
+    try:
+        from services.rss_news import get_news_for_symbol
+        rss_items = get_news_for_symbol(symbol, limit=8)
+        existing = {n["title"] for n in news}
+        for it in rss_items:
+            if it["title"] in existing:
+                continue
+            disc_type = "NEWS"
+            ts = 0
+            pub = it.get("pub", "")
+            if pub:
+                try:
+                    from datetime import datetime as _dt
+                    ts = int(_dt.strptime(pub[:16], "%Y-%m-%d %H:%M").timestamp())
+                except Exception:
+                    pass
+            news.append({
+                "id":             f"rss-{symbol}-{it['title'][:20]}",
+                "title":          it["title"],
+                "summary":        it.get("desc", ""),
+                "date":           pub[:10] if pub else "",
+                "time":           pub[11:16] if len(pub) > 10 else "",
+                "timestamp":      ts,
+                "provider":       it.get("source", "RSS"),
+                "url":            it.get("url", ""),
+                "category":       disc_type,
+                "category_label": "Haber",
+                "category_color": "green",
+                "category_emoji": "📰",
+                "source":         "rss",
+            })
+            existing.add(it["title"])
+    except Exception:
+        pass
+
     # KAP mock bildirimleri (gerçek API olmadığında)
     mock = _mock_kap_disclosures(symbol)
 

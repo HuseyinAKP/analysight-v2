@@ -22,6 +22,26 @@ def list_sources():
     return NEWS_SOURCES
 
 
+@router.get("/news/rss")
+def rss_news(limit: int = Query(30, le=80)):
+    """Gerçek zamanlı RSS haberleri — Bloomberg HT, Hürriyet, AA, Investing TR."""
+    try:
+        from services.rss_news import get_latest_news
+        return get_latest_news(limit=limit)
+    except Exception as e:
+        return {"error": str(e), "items": []}
+
+
+@router.get("/news/rss/{symbol}")
+def rss_news_symbol(symbol: str, limit: int = Query(10, le=30)):
+    """Belirli bir sembolle ilgili RSS haberleri."""
+    try:
+        from services.rss_news import get_news_for_symbol
+        return get_news_for_symbol(symbol.upper(), limit=limit)
+    except Exception as e:
+        return {"error": str(e), "items": []}
+
+
 class NewsAnalyzeRequest(BaseModel):
     headline: str
     summary: Optional[str] = None
