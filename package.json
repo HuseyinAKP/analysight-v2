@@ -12,9 +12,11 @@
     "dev:api": "npm run dev --workspace=apps/api",
     "mobile": "cd apps/mobile && npx expo start",
     "mobile:ios": "cd apps/mobile && npx expo start --ios",
-    "mobile:android": "cd apps/mobile && npx expo start --android"
+    "mobile:android": "cd apps/mobile && npx expo start --android",
+    "build": "npm run build --workspace=apps/web"
   },
   "devDependencies": {
-    "concurrently": "^9.0.0"
+    "concurrently": "^9.0.0",
+    "next": "15.1.6"
   }
 }
