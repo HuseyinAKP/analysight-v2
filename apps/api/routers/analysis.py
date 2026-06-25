@@ -66,6 +66,64 @@ def get_ohlcv_route(symbol: str, days: int = 90):
     return result.round(4).to_dict(orient="records")
 
 
+@router.get("/{symbol}/composite")
+def get_composite_score(symbol: str):
+    """
+    0-100 Composite Skor: ML + Teknik + Trend + Risk + Momentum
+    """
+    sym = _require_symbol(symbol)
+    df  = get_ohlcv(sym, days=300)
+    if df is None or df.empty:
+        raise HTTPException(status_code=404, detail=f"No data for {sym}")
+
+    ind = build_indicators(df)
+    sc  = build_scenarios(df)
+
+    from services.market_structure import calc_adx
+    adx_data = calc_adx(df)
+    adx_val  = float(adx_data.get("adx", 20))
+
+    close  = float(df["close"].iloc[-1])
+    ema50  = float(ind.get("ema50", close))
+    ema200 = float(ind.get("ema200", close))
+    price_vs_ema50  = (close / ema50  - 1) * 100 if ema50  else 0
+    price_vs_ema200 = (close / ema200 - 1) * 100 if ema200 else 0
+
+    rsi         = float(ind.get("rsi", 50))
+    macd        = float(ind.get("macd", 0))
+    macd_sig    = float(ind.get("macd_signal", 0))
+    confluence  = float(ind.get("confluence", {}).get("score", 50))
+    uncertainty = float(sc.get("uncertainty_index", 50))
+    bull_prob   = float(sc.get("scenarios", {}).get("bull", {}).get("probability", 33))
+
+    # ML tahmin
+    ml_prob_5d = None
+    try:
+        from services.ml_engine import predict as ml_predict, models_exist
+        if models_exist():
+            df_ml = df.copy()
+            df_ml.columns = [c.capitalize() for c in df_ml.columns]
+            ml_res = ml_predict(df_ml)
+            ml_prob_5d = ml_res.get("prob5")
+    except Exception:
+        pass
+
+    from services.composite_score import compute
+    result = compute(
+        rsi=rsi,
+        macd_bullish=macd > macd_sig,
+        confluence_score=confluence,
+        adx=adx_val,
+        price_vs_ema50_pct=price_vs_ema50,
+        price_vs_ema200_pct=price_vs_ema200,
+        uncertainty=uncertainty,
+        bull_prob=bull_prob,
+        ml_prob_5d=ml_prob_5d,
+    )
+    result["symbol"] = sym
+    return result
+
+
 @router.get("/{symbol}/multiframe")
 def get_multiframe(symbol: str):
     """Multi-timeframe confluence — Bloomberg-style cross-timeframe analysis."""
