@@ -103,7 +103,7 @@ def _fetch_newsapi(symbol: str) -> Optional[list]:
 
 
 def get_news(symbol: str) -> list:
-    """Ana haber fonksiyonu — gerçek veya mock."""
+    """Ana haber fonksiyonu — öncelik: NewsAPI → GDELT → Mock."""
     cache_key = symbol.upper()
     now = time.time()
 
@@ -113,14 +113,24 @@ def get_news(symbol: str) -> list:
         if now - ts < _CACHE_TTL:
             return items
 
-    # Gerçek API dene
+    # 1. NewsAPI (key varsa)
     if NEWS_API_KEY:
         items = _fetch_newsapi(symbol)
         if items:
             _cache[cache_key] = (now, items)
             return items
 
-    # Mock fallback
+    # 2. GDELT (ücretsiz, key gerektirmez)
+    try:
+        from services.news_gdelt import get_news_gdelt
+        items = get_news_gdelt(symbol)
+        if items:
+            _cache[cache_key] = (now, items)
+            return items
+    except Exception:
+        pass
+
+    # 3. Mock fallback
     from services.news_mock import get_news as mock_news
     items = mock_news(symbol)
     _cache[cache_key] = (now, items)
