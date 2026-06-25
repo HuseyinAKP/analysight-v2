@@ -11,6 +11,7 @@ from fastapi import APIRouter, HTTPException, Query
 from services.anomaly_detector import detect_anomalies
 from services.context_enricher import enrich_anomaly
 from services.pattern_matcher import find_similar_periods
+from services.macro_layer import get_macro_snapshot
 
 router = APIRouter()
 
@@ -81,12 +82,14 @@ def anomaly_detail(symbol: str, date: str):
             raise HTTPException(status_code=404, detail=f"Bu tarihe yakın anomali bulunamadı: {date}")
         match = best
 
-    # Bağlam zenginleştir
+    # Bağlam zenginleştir + makro anlık görüntü
     context = enrich_anomaly(sym, match["date"], match["magnitude"])
+    macro   = get_macro_snapshot(match["date"])
 
     return {
         **match,
         "context": context,
+        "macro":   macro,
     }
 
 
@@ -100,6 +103,14 @@ def pattern_match(symbol: str):
     result = find_similar_periods(sym)
     if "error" in result:
         raise HTTPException(status_code=503, detail=result["error"])
+
+    # Her eşleşme için makro anlık görüntü ekle
+    for m in result.get("matches", []):
+        try:
+            m["macro"] = get_macro_snapshot(m["date"])
+        except Exception:
+            m["macro"] = None
+
     return result
 
 
