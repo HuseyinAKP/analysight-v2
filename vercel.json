@@ -1,5 +1,6 @@
 {
   "buildCommand": "bash build.sh",
   "outputDirectory": "apps/web/.next",
-  "framework": "nextjs"
+  "framework": "nextjs",
+  "installCommand": "echo 'skip root install'"
 }
