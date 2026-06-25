@@ -10,6 +10,7 @@ from fastapi import APIRouter, HTTPException, Query
 
 from services.anomaly_detector import detect_anomalies
 from services.context_enricher import enrich_anomaly
+from services.pattern_matcher import find_similar_periods
 
 router = APIRouter()
 
@@ -87,6 +88,19 @@ def anomaly_detail(symbol: str, date: str):
         **match,
         "context": context,
     }
+
+
+@router.get("/{symbol}/pattern-match")
+def pattern_match(symbol: str):
+    """
+    Bugünkü teknik duruma en benzer tarihsel dönemleri döner.
+    Her eşleşme için o dönemin ardından ne olduğu gösterilir.
+    """
+    sym = symbol.upper()
+    result = find_similar_periods(sym)
+    if "error" in result:
+        raise HTTPException(status_code=503, detail=result["error"])
+    return result
 
 
 @router.get("/{symbol}/timeline")
