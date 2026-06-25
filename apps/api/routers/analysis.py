@@ -526,7 +526,7 @@ def _claude_prompt_analyze(ctx: dict, prompt_type: str) -> Optional[str]:
         client = anthropic.Anthropic(api_key=api_key)
         prompt = _build_prompt(ctx, prompt_type)
         msg = client.messages.create(
-            model="claude-3-haiku-20240307",
+            model="claude-haiku-4-5-20251001",
             max_tokens=700,
             messages=[{"role": "user", "content": prompt}],
         )
@@ -835,7 +835,7 @@ Sadece kod bloğu döndür, başka metin yok."""
 
     try:
         msg = client.messages.create(
-            model="claude-3-haiku-20240307",
+            model="claude-haiku-4-5-20251001",
             max_tokens=1200,
             messages=[{"role": "user", "content": prompt}],
         )
