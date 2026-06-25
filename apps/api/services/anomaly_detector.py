@@ -17,12 +17,13 @@ import numpy as np
 from services.real_data import get_ohlcv, SYMBOL_MAP
 
 # ── Yapılandırma ───────────────────────────────────────────────────────────────
-Z_THRESHOLD       = 2.3   # |Z| > 2.3 → anomali
-ATR_MULT          = 2.0   # günlük hareket > ATR*2 → anomali
-CUM_5D_THRESH     = 0.08  # 5 günde %8
-CUM_10D_THRESH    = 0.12  # 10 günde %12
-CUM_20D_THRESH    = 0.18  # 20 günde %18
-MIN_MAGNITUDE     = 0.03  # %3 altı hareketler gösterilmez
+Z_THRESHOLD       = 2.8   # |Z| > 2.8 → anomali (daha seçici)
+ATR_MULT          = 2.5   # günlük hareket > ATR*2.5 → anomali
+CUM_5D_THRESH     = 0.10  # 5 günde %10
+CUM_10D_THRESH    = 0.15  # 10 günde %15
+CUM_20D_THRESH    = 0.22  # 20 günde %22
+MIN_MAGNITUDE     = 0.04  # %4 altı hareketler gösterilmez
+COOLDOWN_DAYS     = 7     # iki anomali arası minimum gün
 _CACHE_TTL        = 3600  # 1 saat
 _cache: dict[str, tuple[float, list]] = {}
 
@@ -193,14 +194,40 @@ def detect_anomalies(symbol: str, years: int = 5) -> list[dict]:
             ))
             flagged_idx.add(i)
 
-    # Tarihe göre sırala, tekrarlananları kaldır
-    seen_dates: set[str] = set()
-    unique: list[Anomaly] = []
-    for a in sorted(anomalies, key=lambda x: x.date):
-        if a.date not in seen_dates:
-            seen_dates.add(a.date)
-            unique.append(a)
+    # Tarihe göre sırala, tekrarlananları ve cooldown içindeki zayıfları kaldır
+    from datetime import datetime as _dt
+    sorted_anomalies = sorted(anomalies, key=lambda x: x.date)
 
-    result = [asdict(a) for a in unique]
+    unique: list[Anomaly] = []
+    last_date: Optional[str] = None
+    for a in sorted_anomalies:
+        if last_date:
+            try:
+                gap = (_dt.strptime(a.date, "%Y-%m-%d") - _dt.strptime(last_date, "%Y-%m-%d")).days
+                if gap < COOLDOWN_DAYS:
+                    # Cooldown içindeyse yalnızca daha büyük olanı tut
+                    if abs(a.magnitude) > abs(unique[-1].magnitude):
+                        unique[-1] = a
+                    continue
+            except Exception:
+                pass
+        unique.append(a)
+        last_date = a.date
+
+    # numpy scalar → Python native (JSON serileştirme için)
+    def _clean(d: dict) -> dict:
+        out = {}
+        for k, v in d.items():
+            if isinstance(v, (np.bool_,)):
+                out[k] = bool(v)
+            elif isinstance(v, (np.integer,)):
+                out[k] = int(v)
+            elif isinstance(v, (np.floating,)):
+                out[k] = float(v)
+            else:
+                out[k] = v
+        return out
+
+    result = [_clean(asdict(a)) for a in unique]
     _cache[cache_key] = (now, result)
     return result

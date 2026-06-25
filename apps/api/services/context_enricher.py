@@ -82,13 +82,13 @@ def _gdelt_context(symbol: str, date_str: str) -> list[dict]:
     end   = (dt + timedelta(days=3)).strftime("%Y%m%d%H%M%S")
 
     params = {
-        "query":       f"{query_term} sourcelang:English OR sourcelang:Turkish",
-        "mode":        "artlist",
-        "maxrecords":  "8",
+        "query":         query_term,
+        "mode":          "artlist",
+        "maxrecords":    "10",
         "startdatetime": start,
         "enddatetime":   end,
-        "sort":        "hybridrel",
-        "format":      "json",
+        "sort":          "hybridrel",
+        "format":        "json",
     }
     url = "https://api.gdeltproject.org/api/v2/doc/doc?" + urllib.parse.urlencode(params)
 
@@ -103,15 +103,41 @@ def _gdelt_context(symbol: str, date_str: str) -> list[dict]:
     results = []
     for art in articles:
         title = art.get("title", "").strip()
-        if not title:
+        if not title or len(title) < 10:
             continue
         results.append({
             "title":  title,
             "url":    art.get("url", ""),
             "source": art.get("domain", ""),
             "date":   art.get("seendate", "")[:8],
-            "lang":   art.get("language", ""),
+            "lang":   art.get("language", "en"),
         })
+
+    # Sonuç yoksa Türkiye/küresel piyasa genel sorgusu dene
+    if not results:
+        fallback_terms = ["Turkey stock market", "BIST", "emerging markets"] \
+            if symbol.upper() in ("THYAO","GARAN","EREGL","TUPRS","BIMAS","ISCTR","AKBNK","TCELL","SAHOL","KCHOL") \
+            else ["stock market", "financial markets"]
+        fb_query = " OR ".join(f'"{t}"' for t in fallback_terms)
+        fb_params = {**params, "query": fb_query, "maxrecords": "6"}
+        fb_url = "https://api.gdeltproject.org/api/v2/doc/doc?" + urllib.parse.urlencode(fb_params)
+        try:
+            fb_req = urllib.request.Request(fb_url, headers={"User-Agent": "Analysight/1.0"})
+            with urllib.request.urlopen(fb_req, timeout=8) as fb_resp:
+                fb_data = json.loads(fb_resp.read().decode())
+            for art in fb_data.get("articles", []):
+                title = art.get("title", "").strip()
+                if title and len(title) > 10:
+                    results.append({
+                        "title":  title,
+                        "url":    art.get("url", ""),
+                        "source": art.get("domain", ""),
+                        "date":   art.get("seendate", "")[:8],
+                        "lang":   "en",
+                    })
+        except Exception:
+            pass
+
     return results
 
 # ── NewsAPI ────────────────────────────────────────────────────────────────────
