@@ -28,6 +28,8 @@ class ScanRequest(BaseModel):
     bull_prob_min: Optional[float] = None
     bb_position: Optional[str] = None
     stoch_signal: Optional[str] = None
+    ml_prob_min: Optional[float] = None
+    ml_prob_max: Optional[float] = None
     markets: list[str] = []
 
 
@@ -79,9 +81,30 @@ def scan_custom(body: ScanRequest):
         bull_prob_min=body.bull_prob_min,
         bb_position=body.bb_position,
         stoch_signal=body.stoch_signal,
+        ml_prob_min=body.ml_prob_min,
+        ml_prob_max=body.ml_prob_max,
         markets=body.markets,
     )
     return run_scan(f)
+
+
+@router.get("/scan/ml-top")
+def scan_ml_top(limit: int = 20):
+    """
+    Tüm sembolleri ML skoru ile tarar, en güçlü sinyallileri döner.
+    ML modeli yoksa boş liste.
+    """
+    from services.scanner import ScanFilter
+    f = ScanFilter(ml_prob_min=50.0)
+    results = run_scan(f)
+    # ML olasılığına göre sırala
+    results_with_ml = [r for r in results if r.get("ml_prob_5d") is not None]
+    results_with_ml.sort(key=lambda x: x["ml_prob_5d"], reverse=True)
+    return {
+        "total": len(results_with_ml),
+        "results": results_with_ml[:limit],
+        "sorted_by": "ml_prob_5d",
+    }
 
 
 # ── Alerts ───────────────────────────────────────────────────────────────────
