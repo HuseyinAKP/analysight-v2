@@ -9,7 +9,7 @@ from services.technical_analysis import build_indicators
 from services.market_structure import calc_adx, calc_stochastic, detect_structure
 from services.event_study import find_similar_events
 from services.ml_forecast import forecast
-from services.news_mock import get_news
+from services.news_real import get_news
 from services.social_signal import get_social_signals, get_why_chain
 from services.social_signals import get_social_signal, get_trending_social
 

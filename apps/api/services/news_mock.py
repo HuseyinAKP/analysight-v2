@@ -7,13 +7,27 @@ import random
 from datetime import datetime, timedelta
 
 CATEGORIES = {
-    "Bilanço":     {"label": "Bilanço",      "color": "blue",   "impact": "high"},
-    "Makro":       {"label": "Makro",         "color": "purple", "impact": "medium"},
-    "Jeopolitik":  {"label": "Jeopolitik",    "color": "red",    "impact": "medium"},
-    "Regülasyon":  {"label": "Regülasyon",    "color": "orange", "impact": "medium"},
-    "Ürün":        {"label": "Ürün / Teknoloji","color":"green",  "impact": "low"},
-    "Birleşme":    {"label": "M&A",           "color": "yellow", "impact": "high"},
-    "Sektör":      {"label": "Sektör",        "color": "gray",   "impact": "low"},
+    "Bilanço":     {"label": "Bilanço",        "color": "blue",   "impact": "high",
+                    "typical_effect": "Yüksek fiyat hareketi — pozitif sürpriz +%3–8, negatif -%3–10",
+                    "effect_direction": "both"},
+    "Makro":       {"label": "Makro",           "color": "purple", "impact": "medium",
+                    "typical_effect": "Faiz/enflasyon kararları tüm piyasayı etkiler — orta vadeli etki",
+                    "effect_direction": "neutral"},
+    "Jeopolitik":  {"label": "Jeopolitik",      "color": "red",    "impact": "medium",
+                    "typical_effect": "Belirsizlik artırır, risk primini yükseltir — genellikle kısa vadeli satış",
+                    "effect_direction": "bearish"},
+    "Regülasyon":  {"label": "Regülasyon",      "color": "orange", "impact": "medium",
+                    "typical_effect": "Sektöre özel etki — kısıtlayıcı regülasyonlar genellikle -%2–5",
+                    "effect_direction": "bearish"},
+    "Ürün":        {"label": "Ürün / Teknoloji","color": "green",  "impact": "low",
+                    "typical_effect": "Yeni ürün lansmanları kısa vadeli +%1–3 pozitif etki yaratabilir",
+                    "effect_direction": "bullish"},
+    "Birleşme":    {"label": "M&A",             "color": "yellow", "impact": "high",
+                    "typical_effect": "Hedef şirkette güçlü pozitif etki — genellikle +%10–30 premium",
+                    "effect_direction": "bullish"},
+    "Sektör":      {"label": "Sektör",          "color": "gray",   "impact": "low",
+                    "typical_effect": "Sektör geneli haberleri bireysel hisselere sınırlı etki eder",
+                    "effect_direction": "neutral"},
 }
 
 NEWS_POOL = {
@@ -81,6 +95,8 @@ def get_news(symbol: str, count: int = 6) -> list:
             "category_label": cat_info["label"],
             "category_color": cat_info["color"],
             "impact": cat_info["impact"],
+            "typical_effect": cat_info["typical_effect"],
+            "effect_direction": cat_info["effect_direction"],
             "sentiment": sentiment,
             "timestamp": ts.strftime("%Y-%m-%dT%H:%M:00"),
             "hours_ago": hours_ago,
