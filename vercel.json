@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm install --prefix apps/web && npx --prefix apps/web next build",
+  "buildCommand": "bash build.sh",
   "outputDirectory": "apps/web/.next",
   "framework": "nextjs"
 }
