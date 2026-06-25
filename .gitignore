@@ -8,3 +8,5 @@ apps/api/.venv/
 .DS_Store
 apps/mobile/.expo/
 apps/mobile/node_modules/
+.vercel
+.env*
