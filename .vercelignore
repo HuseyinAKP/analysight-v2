@@ -1,0 +1,7 @@
+apps/api
+apps/mobile
+*.pkl
+*.joblib
+__pycache__
+.venv
+node_modules
