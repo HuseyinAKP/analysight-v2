@@ -532,8 +532,7 @@ def _claude_prompt_analyze(ctx: dict, prompt_type: str) -> Optional[str]:
         )
         return msg.content[0].text.strip()
     except Exception as e:
-        import logging
-        logging.error(f"Claude API error: {e}")
+        print(f"[Claude API ERROR] {type(e).__name__}: {e}", flush=True)
         return None
 
 
