@@ -12,6 +12,6 @@
   },
   "devDependencies": {
     "concurrently": "^9.0.0",
-    "next": "15.1.6"
+    "next": "16.2.9"
   }
 }
