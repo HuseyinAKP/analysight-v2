@@ -35,15 +35,22 @@ from services.real_data import get_ohlcv
 from services.anomaly_detector import detect_anomalies
 from services.context_enricher import enrich_anomaly
 
-# Olay kategorisi → vektör indeksi (8-13)
+# Olay kategorisi → vektör indeksi (8-19) — 12 kategori
 _CAT_INDEX = {
-    "Kur Krizi":             8,
-    "Merkez Bankası":        9,
-    "Jeopolitik / Çatışma": 10,
-    "Enerji Şoku":          11,
-    "Salgın / Sağlık":      12,
-    "Seçim / Siyaset":      13,
+    "Kur Krizi":               8,
+    "Merkez Bankası":          9,
+    "Jeopolitik / Çatışma":   10,
+    "Enerji Şoku":            11,
+    "Salgın / Sağlık":        12,
+    "Seçim / Siyaset":        13,
+    "Bilanço Sürprizi":       14,
+    "Temettü / Bedelsiz":     15,
+    "Yönetim Değişikliği":    16,
+    "Endeks Girişi / Çıkışı": 17,
+    "Kredi Notu":             18,
+    "Manipülasyon / SPK":     19,
 }
+_VECTOR_DIM = 20    # 8 teknik + 12 olay
 _CAT_WEIGHT = 0.6   # olay boyutlarının ağırlığı (teknik=1.0 ile karşılaştırmalı)
 
 _CACHE_TTL = 1800   # 30 dakika
@@ -89,7 +96,7 @@ def _build_vectors(df: pd.DataFrame) -> np.ndarray:
     idx30 = c.pct_change(30)
 
     n = len(df)
-    mat = np.zeros((n, 14), dtype=np.float32)
+    mat = np.zeros((n, _VECTOR_DIM), dtype=np.float32)
 
     # Teknik boyutlar 0-7
     mat[:, 0] = rsi.fillna(50).values / 100
@@ -101,7 +108,7 @@ def _build_vectors(df: pd.DataFrame) -> np.ndarray:
     mat[:, 6] = mom20.fillna(0).clip(-0.3, 0.3).values
     mat[:, 7] = (rsi.fillna(50).values - 50) / 50
 
-    # Olay kategorisi boyutları 8-13 başlangıçta sıfır
+    # Olay kategorisi boyutları 8-19 başlangıçta sıfır
     # _enrich_with_events() tarafından anomali günlerinde doldurulur
     return mat
 
@@ -209,6 +216,9 @@ def find_similar_periods(symbol: str, top_n: int = 5) -> dict:
         prev = closes[i - 1] if i > 0 else closes[i]
         day_ret = round((closes[i] - prev) / prev * 100, 2) if prev else 0
 
+        # O günkü aktif kategori etiketleri
+        event_cats = [idx_to_cat[j] for j in range(8, _VECTOR_DIM) if mat[i][j] > 0]
+
         matches.append({
             "date":             date_str,
             "similarity":       round(sim, 3),
@@ -216,6 +226,7 @@ def find_similar_periods(symbol: str, top_n: int = 5) -> dict:
             "post_5d":          post_return(i, 5),
             "post_30d":         post_return(i, 30),
             "post_90d":         post_return(i, 90),
+            "event_categories": event_cats,
         })
 
     if not matches:
@@ -268,7 +279,7 @@ def find_similar_periods(symbol: str, top_n: int = 5) -> dict:
 
     # Aktif olay kategorileri (bugünkü vektörde 0'dan büyük olanlar)
     idx_to_cat = {v: k for k, v in _CAT_INDEX.items()}
-    active_cats = [idx_to_cat[i] for i in range(8, 14) if mat[-1][i] > 0]
+    active_cats = [idx_to_cat[i] for i in range(8, _VECTOR_DIM) if mat[-1][i] > 0]
 
     current_state = {
         "rsi":                   round(rsi_now, 1),
@@ -277,6 +288,24 @@ def find_similar_periods(symbol: str, top_n: int = 5) -> dict:
         "momentum_20d":          round(float(mat[-1][6]) * 100, 2),
         "active_event_categories": active_cats,
     }
+
+    # Her eşleşme için haber başlıklarını ekle (enrich_anomaly lazy call)
+    for m in selected:
+        try:
+            ctx = enrich_anomaly(symbol, m["date"], m["day_return"])
+            m["headlines"]   = [h["title"] for h in ctx.get("headlines", [])[:4]]
+            m["macro_data"]  = ctx.get("macro_data", [])
+            m["data_sources"] = ctx.get("data_sources", [])
+            # Kategoriler zaten vektörden geliyor, ama enricher'dan da tamamla
+            enricher_cats = ctx.get("categories", [])
+            existing = set(m["event_categories"])
+            for c in enricher_cats:
+                if c not in existing and c != "Genel Piyasa":
+                    m["event_categories"].append(c)
+        except Exception:
+            m["headlines"]    = []
+            m["macro_data"]   = []
+            m["data_sources"] = []
 
     result = {
         "symbol":        symbol,
