@@ -77,6 +77,58 @@ async def run_backtest_endpoint(req: BacktestRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+class WalkForwardRequest(BaseModel):
+    symbol: str
+    strategy: str
+    start_date: str
+    end_date: str
+    initial_capital: float = 100_000.0
+    n_splits: int = 5
+    min_train_days: int = 252
+    rsi_buy: float = 30.0
+    rsi_sell: float = 70.0
+    rsi_period: int = 14
+    fast_period: int = 10
+    slow_period: int = 50
+    bb_period: int = 20
+    bb_std: float = 2.0
+    ml_threshold: float = 55.0
+    stop_loss_pct: Optional[float] = None
+    take_profit_pct: Optional[float] = None
+
+
+@router.post("/api/backtest/walk-forward")
+async def run_walk_forward_endpoint(req: WalkForwardRequest):
+    try:
+        from services.backtest_engine import run_walk_forward
+        result = run_walk_forward(
+            symbol=req.symbol,
+            strategy=req.strategy,
+            start_date=req.start_date,
+            end_date=req.end_date,
+            initial_capital=req.initial_capital,
+            n_splits=req.n_splits,
+            min_train_days=req.min_train_days,
+            rsi_buy=req.rsi_buy,
+            rsi_sell=req.rsi_sell,
+            rsi_period=req.rsi_period,
+            fast_period=req.fast_period,
+            slow_period=req.slow_period,
+            bb_period=req.bb_period,
+            bb_std=req.bb_std,
+            ml_threshold=req.ml_threshold,
+            stop_loss_pct=req.stop_loss_pct,
+            take_profit_pct=req.take_profit_pct,
+        )
+        if "error" in result:
+            raise HTTPException(status_code=400, detail=result["error"])
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/api/backtest/strategies")
 async def list_strategies():
     return {

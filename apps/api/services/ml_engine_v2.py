@@ -121,7 +121,69 @@ def _max_drawdown_fwd(close: np.ndarray, start: int, horizon: int) -> float:
     return abs(dd)
 
 
-# ── Özellik mühendisliği v2 (28 özellik) ─────────────────────────────────────
+# ── Qlib Alpha158 ilhamlı yardımcılar ────────────────────────────────────────
+def _stochastic_rsv(c: pd.Series, h: pd.Series, l: pd.Series, n: int) -> pd.Series:
+    """Stochastic RSV: (close - min_low_N) / (max_high_N - min_low_N)"""
+    mn = l.rolling(n).min()
+    mx = h.rolling(n).max()
+    return (c - mn) / (mx - mn + 1e-9)
+
+def _linear_slope(s: pd.Series, n: int) -> pd.Series:
+    """N günlük fiyatın lineer regresyon eğimi (normalize)"""
+    def slope(arr):
+        x = np.arange(len(arr))
+        if np.isnan(arr).any():
+            return np.nan
+        return np.polyfit(x, arr, 1)[0]
+    return s.rolling(n).apply(slope, raw=True) / (s + 1e-9)
+
+def _corr_price_vol(c: pd.Series, v: pd.Series, n: int) -> pd.Series:
+    """Fiyat-hacim korelasyonu (N günlük)"""
+    return c.rolling(n).corr(v)
+
+def _cntp(ret: pd.Series, n: int) -> pd.Series:
+    """Pozitif gün oranı son N günde"""
+    return (ret > 0).rolling(n).mean()
+
+def _cntd(ret: pd.Series, n: int) -> pd.Series:
+    """Net pozitif-negatif gün farkı"""
+    pos = (ret > 0).rolling(n).mean()
+    neg = (ret < 0).rolling(n).mean()
+    return pos - neg
+
+def _sump(ret: pd.Series, n: int) -> pd.Series:
+    """Pozitif getirilerin toplam mutlak getiriye oranı"""
+    pos = ret.clip(lower=0).rolling(n).sum()
+    total = ret.abs().rolling(n).sum()
+    return pos / (total + 1e-9)
+
+def _sumd(ret: pd.Series, n: int) -> pd.Series:
+    """Pozitif - Negatif getiri oranı farkı"""
+    pos = ret.clip(lower=0).rolling(n).sum()
+    neg = (-ret.clip(upper=0)).rolling(n).sum()
+    total = ret.abs().rolling(n).sum() + 1e-9
+    return (pos - neg) / total
+
+def _wvma(ret: pd.Series, v: pd.Series, n: int) -> pd.Series:
+    """Hacim ağırlıklı volatilite"""
+    return (ret.abs() * v).rolling(n).sum() / (v.rolling(n).sum() + 1e-9)
+
+def _imax(h: pd.Series, n: int) -> pd.Series:
+    """Son N günde yüksek noktanın kaç gün önce olduğu (normalize)"""
+    return h.rolling(n).apply(lambda x: (n - 1 - np.argmax(x)) / n, raw=True)
+
+def _imin(l: pd.Series, n: int) -> pd.Series:
+    """Son N günde düşük noktanın kaç gün önce olduğu (normalize)"""
+    return l.rolling(n).apply(lambda x: (n - 1 - np.argmin(x)) / n, raw=True)
+
+def _skew(ret: pd.Series, n: int) -> pd.Series:
+    return ret.rolling(n).skew()
+
+def _kurt(ret: pd.Series, n: int) -> pd.Series:
+    return ret.rolling(n).kurt()
+
+
+# ── Özellik mühendisliği v3 (28 + 20 Qlib = 48 özellik) ─────────────────────
 def build_features(df: pd.DataFrame) -> pd.DataFrame:
     c = df["Close"].astype(float)
     h = df["High"].astype(float)
@@ -176,8 +238,50 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
     bb_std  = c.rolling(20).std()
     bb_width = bb_std / (bb_mid + 1e-9)
 
+    # ── Qlib Alpha158 ilhamlı faktörler ──────────────────────────────────────
+    # Stochastic (farklı pencereler)
+    rsv5  = _stochastic_rsv(c, h, l, 5)
+    rsv20 = _stochastic_rsv(c, h, l, 20)
+    rsv60 = _stochastic_rsv(c, h, l, 60)
+
+    # Lineer trend eğimi
+    beta5  = _linear_slope(c, 5)
+    beta20 = _linear_slope(c, 20)
+
+    # Fiyat-hacim korelasyonu
+    corr5  = _corr_price_vol(c, v.fillna(0), 5)
+    corr20 = _corr_price_vol(c, v.fillna(0), 20)
+
+    # Pozitif gün oranı ve net fark
+    cntp5  = _cntp(ret1, 5)
+    cntp20 = _cntp(ret1, 20)
+    cntd5  = _cntd(ret1, 5)
+    cntd20 = _cntd(ret1, 20)
+
+    # Getiri yönü dengesi
+    sumd5  = _sumd(ret1, 5)
+    sumd20 = _sumd(ret1, 20)
+    sump20 = _sump(ret1, 20)
+
+    # Hacim ağırlıklı volatilite
+    wvma5  = _wvma(ret1, v.fillna(0), 5)
+    wvma20 = _wvma(ret1, v.fillna(0), 20)
+
+    # Yüksek/düşük noktanın zamansal konumu
+    imax20 = _imax(h, 20)
+    imin20 = _imin(l, 20)
+
+    # Getiri dağılımı istatistikleri
+    skew20 = _skew(ret1, 20).clip(-3, 3)
+    kurt20 = _kurt(ret1, 20).clip(-5, 5)
+
+    # Candle pattern faktörleri (Qlib KMID, KLEN, KSFT)
+    kmid  = (c - df["Open"].astype(float)) / (df["Open"].astype(float) + 1e-9)
+    klen  = (h - l) / (df["Open"].astype(float) + 1e-9)
+    ksft  = (2*c - h - l) / (h - l + 1e-9)   # candle bias
+
     feats = pd.DataFrame({
-        # Orijinal 18
+        # ── Orijinal teknik 18 ──
         "rsi14":          rsi14,
         "rsi7":           rsi7,
         "rsi_diff":       rsi14 - rsi7,
@@ -196,7 +300,7 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
         "vol20_rel":      vol20 / (ret20.abs() + 1e-9),
         "volume_z":       v_z.clip(-3, 3),
         "high_low_ratio": (h - l) / c,
-        # Yeni 10
+        # ── v2 eklentiler 10 ──
         "adx":            adx,
         "vol_regime":     vol_regime.clip(0, 3),
         "pct_from_52h":   pct_from_52h,
@@ -207,6 +311,31 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
         "rsi_slope":      rsi_slope,
         "vol_adj_ret5":   vol_adj_ret5.clip(-5, 5),
         "bb_width":       bb_width,
+        # ── Qlib Alpha158 ilhamlı 20 ──
+        "rsv5":           rsv5,
+        "rsv20":          rsv20,
+        "rsv60":          rsv60,
+        "beta5":          beta5.clip(-0.1, 0.1),
+        "beta20":         beta20.clip(-0.05, 0.05),
+        "corr5":          corr5.clip(-1, 1),
+        "corr20":         corr20.clip(-1, 1),
+        "cntp5":          cntp5,
+        "cntp20":         cntp20,
+        "cntd5":          cntd5,
+        "cntd20":         cntd20,
+        "sumd5":          sumd5,
+        "sumd20":         sumd20,
+        "sump20":         sump20,
+        "wvma5":          wvma5.clip(0, 0.1),
+        "wvma20":         wvma20.clip(0, 0.05),
+        "imax20":         imax20,
+        "imin20":         imin20,
+        "skew20":         skew20,
+        "kurt20":         kurt20,
+        # ── Candle pattern 3 ──
+        "kmid":           kmid.clip(-0.1, 0.1),
+        "klen":           klen.clip(0, 0.1),
+        "ksft":           ksft.clip(-1, 1),
     }, index=c.index)
 
     return feats

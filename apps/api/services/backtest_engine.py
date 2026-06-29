@@ -341,3 +341,212 @@ def run_backtest(
     result["end_date"]   = end_date
     result["n_days"]     = len(df)
     return result
+
+
+# ── Walk-Forward Validation ───────────────────────────────────────────────────
+def run_walk_forward(
+    symbol: str,
+    strategy: str,
+    start_date: str,
+    end_date: str,
+    initial_capital: float = 100_000,
+    n_splits: int = 5,           # kaç pencere
+    min_train_days: int = 252,   # minimum eğitim penceresi (1 yıl)
+    **strategy_params,
+) -> dict:
+    """
+    Walk-Forward Validation: zaman sızıntısı olmayan gerçekçi test.
+
+    Qlib yaklaşımı:
+      - Toplam süreyi n_splits eşit parçaya böl
+      - Her iterasyonda: önceki tüm veri = train, sonraki dilim = test
+      - Test periyotlarını birleştir → gerçek out-of-sample equity curve
+
+    Örnek (n_splits=5, 5 yıl veri):
+      Iter 1: Train=Y1,    Test=Y2
+      Iter 2: Train=Y1+Y2, Test=Y3
+      Iter 3: Train=Y1+Y2+Y3, Test=Y4
+      ...
+    """
+    yf_sym = f"{symbol}.IS" if "." not in symbol and "-" not in symbol else symbol
+    try:
+        df_full = yf.download(yf_sym, start=start_date, end=end_date,
+                              progress=False, auto_adjust=True)
+        if df_full is None or len(df_full) < min_train_days + 60:
+            return {"error": "Walk-forward için yetersiz veri (min 1 yıl + test)"}
+        if isinstance(df_full.columns, pd.MultiIndex):
+            df_full.columns = df_full.columns.get_level_values(0)
+        df_full = df_full.reset_index()
+    except Exception as e:
+        return {"error": str(e)}
+
+    n = len(df_full)
+    # İlk eğitim periyodunu min_train_days olarak sabitle
+    test_size = max(21, (n - min_train_days) // n_splits)
+
+    all_equity: list[dict] = []
+    window_results: list[dict] = []
+    running_capital = initial_capital
+
+    split_start = min_train_days
+
+    for i in range(n_splits):
+        test_start_idx = split_start + i * test_size
+        test_end_idx   = min(test_start_idx + test_size, n)
+
+        if test_start_idx >= n:
+            break
+
+        # Test penceresi
+        df_test = df_full.iloc[test_start_idx:test_end_idx].reset_index(drop=True)
+        if len(df_test) < 5:
+            continue
+
+        # Sinyal üret (yalnızca test verisinde)
+        rsi_buy    = strategy_params.get("rsi_buy", 30)
+        rsi_sell   = strategy_params.get("rsi_sell", 70)
+        rsi_period = strategy_params.get("rsi_period", 14)
+        fast       = strategy_params.get("fast_period", 10)
+        slow       = strategy_params.get("slow_period", 50)
+        bb_p       = strategy_params.get("bb_period", 20)
+        bb_s       = strategy_params.get("bb_std", 2.0)
+        ml_thr     = strategy_params.get("ml_threshold", 55.0)
+
+        if strategy == "rsi":
+            sigs = _signals_rsi(df_test, rsi_buy, rsi_sell, rsi_period)
+        elif strategy == "ma_cross":
+            sigs = _signals_ma(df_test, fast, slow)
+        elif strategy == "bollinger":
+            sigs = _signals_bollinger(df_test, bb_p, bb_s)
+        elif strategy == "ml_signal":
+            # ML için eğitim verisi = train penceresi
+            df_train = df_full.iloc[:test_start_idx].reset_index(drop=True)
+            sigs = _signals_ml_walk(df_train, df_test, ml_thr)
+        else:
+            return {"error": f"Bilinmeyen strateji: {strategy}"}
+
+        # Bu penceredeki simülasyon (sermaye önceki pencereden devam eder)
+        window_sim = run_simulation(
+            df_test, sigs, running_capital,
+            strategy_params.get("stop_loss_pct"),
+            strategy_params.get("take_profit_pct"),
+        )
+
+        running_capital = window_sim["final_value"]
+
+        # Tarihleri ekle
+        test_start_date = str(df_test.iloc[0].get("Date", ""))[:10]
+        test_end_date   = str(df_test.iloc[-1].get("Date", ""))[:10]
+
+        window_results.append({
+            "window":       i + 1,
+            "train_days":   test_start_idx,
+            "test_start":   test_start_date,
+            "test_end":     test_end_date,
+            "test_days":    len(df_test),
+            "return_pct":   window_sim["total_return"],
+            "sharpe":       window_sim["sharpe"],
+            "max_drawdown": window_sim["max_drawdown"],
+            "win_rate":     window_sim["win_rate"],
+            "n_trades":     window_sim["n_trades"],
+        })
+
+        all_equity.extend(window_sim["equity_curve"])
+
+    if not window_results:
+        return {"error": "Walk-forward penceresi oluşturulamadı"}
+
+    # Toplam metrikler
+    total_return = (running_capital / initial_capital - 1) * 100
+    returns = [w["return_pct"] for w in window_results]
+    sharpes = [w["sharpe"] for w in window_results if w["sharpe"] != 0]
+
+    # Tutarlılık: kaç pencere pozitif?
+    positive_windows = sum(1 for r in returns if r > 0)
+    consistency = round(positive_windows / len(returns) * 100)
+
+    # Beklenti: ortalama + std
+    import statistics
+    avg_return = round(statistics.mean(returns), 2)
+    std_return = round(statistics.stdev(returns), 2) if len(returns) > 1 else 0
+
+    # Gerçek out-of-sample buy&hold
+    bh_start = float(df_full["Close"].iloc[min_train_days])
+    bh_end   = float(df_full["Close"].iloc[-1])
+    bh_return = round((bh_end / bh_start - 1) * 100, 2)
+
+    return {
+        "symbol":           symbol,
+        "strategy":         strategy,
+        "method":           "walk_forward",
+        "n_splits":         len(window_results),
+        "initial_capital":  initial_capital,
+        "final_capital":    round(running_capital, 2),
+        "total_return":     round(total_return, 2),
+        "buy_hold_return":  bh_return,
+        "alpha":            round(total_return - bh_return, 2),
+        "avg_window_return": avg_return,
+        "std_window_return": std_return,
+        "consistency":      consistency,   # % kaç pencere pozitif
+        "avg_sharpe":       round(sum(sharpes) / len(sharpes), 3) if sharpes else 0,
+        "window_results":   window_results,
+        "equity_curve":     all_equity[::max(1, len(all_equity) // 200)],
+    }
+
+
+def _signals_ml_walk(df_train: pd.DataFrame, df_test: pd.DataFrame, threshold: float) -> pd.Series:
+    """
+    Walk-forward ML sinyali: df_train üzerinde eğitilmiş modelle
+    df_test üzerinde tahmin yapar. Look-ahead bias yok.
+    """
+    try:
+        import numpy as _np
+        from services.ml_engine_v2 import build_features, _build_labels, HORIZONS, RETURN_THRESHOLD, MAX_DD_THRESHOLD
+        from xgboost import XGBClassifier
+        from sklearn.preprocessing import StandardScaler
+
+        h = HORIZONS[0]  # 5 günlük sinyal
+
+        # Eğitim
+        feats_train = build_features(df_train).fillna(0)
+        close_train = df_train["Close"].astype(float).values
+        labels_train = _build_labels(close_train, h)
+        valid = ~_np.isnan(feats_train.values).any(axis=1)
+        valid[len(valid)-h:] = False
+
+        if valid.sum() < 50:
+            return _signals_rsi(df_test)
+
+        X_tr = feats_train[valid].values
+        y_tr = labels_train[valid]
+
+        scaler = StandardScaler()
+        X_tr_s = scaler.fit_transform(X_tr)
+
+        pos_rate = y_tr.mean()
+        model = XGBClassifier(
+            n_estimators=200, max_depth=4, learning_rate=0.05,
+            scale_pos_weight=(1 - pos_rate) / (pos_rate + 1e-9),
+            eval_metric="auc", random_state=42, n_jobs=-1,
+        )
+        model.fit(X_tr_s, y_tr)
+
+        # Test sinyalleri
+        feats_test = build_features(df_test).fillna(0)
+        X_te_s = scaler.transform(feats_test.values)
+        probs = model.predict_proba(X_te_s)[:, 1] * 100
+
+        sig = pd.Series(0, index=df_test.index)
+        in_pos = False
+        for i in range(len(sig)):
+            p = probs[i]
+            if not in_pos and p >= threshold:
+                sig.iloc[i] = 1
+                in_pos = True
+            elif in_pos and p < (threshold - 5):
+                sig.iloc[i] = -1
+                in_pos = False
+        return sig
+
+    except Exception:
+        return _signals_rsi(df_test)
