@@ -66,10 +66,10 @@ def build_morning_briefing() -> dict:
             if df is None or df.empty:
                 continue
             ind = build_indicators(df)
-            conf = ind["confluence"]
-            score = conf["score"]
-            rsi = ind["rsi"]
-            change = info["change_pct"]
+            conf  = ind.get("confluence") or {}
+            score = conf.get("score") or conf.get("composite_score") or 50
+            rsi   = ind.get("rsi") or 50
+            change = info.get("change_pct") or 0
 
             market_changes.append({"symbol": sym, "change": change, "price": info["price"], "currency": info["currency"]})
 
@@ -84,10 +84,11 @@ def build_morning_briefing() -> dict:
                     "signal": _signal_label(score),
                     "rsi": round(rsi, 1),
                     "rsi_comment": _rsi_comment(rsi),
-                    "macd_bull": bool(ind["macd"] > ind["macd_signal"]),
-                    "ema_trend": "above" if info["price"] > ind["ema200"] else "below",
+                    "macd_bull": bool((ind.get("macd") or 0) > (ind.get("macd_signal") or 0)),
+                    "ema_trend": "above" if info["price"] > (ind.get("ema200") or 0) else "below",
                 })
-        except Exception:
+        except Exception as e:
+            print(f"[briefing] {sym} skip: {e}")
             continue
 
     # Sort by score

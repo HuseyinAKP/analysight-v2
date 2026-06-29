@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { marketApi } from "@/lib/api";
 import { cn, fmt, fmtPct } from "@/lib/utils";
 import Link from "next/link";
 import { TrendingUp, TrendingDown, CheckCircle, AlertTriangle, RefreshCw, Newspaper, Clock } from "lucide-react";
@@ -64,7 +65,7 @@ function NarrativeText({ text }: { text: string }) {
 export default function BriefingPage() {
   const { data, isLoading, refetch, isFetching, dataUpdatedAt } = useQuery<MorningBriefing>({
     queryKey: ["morning-briefing"],
-    queryFn: () => fetch("http://localhost:8000/api/briefing/morning").then(r => r.json()),
+    queryFn: () => marketApi.briefing(),
     staleTime: 300_000,
   });
 

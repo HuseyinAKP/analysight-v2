@@ -288,7 +288,7 @@ export const setupApi = {
 };
 
 export const marketApi = {
-  briefing:    () => api.get("/api/briefing").then(r => r.data),
+  briefing:    () => api.get("/api/briefing/morning").then(r => r.data),
   commentary:  () => api.get("/api/commentary").then(r => r.data),
   snapshot:    () => api.get("/api/snapshot").then(r => r.data),
 };
