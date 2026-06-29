@@ -1,19 +1,29 @@
 """
 HEI Katman 3 — Örüntü Eşleştirme
 
-Bugünkü piyasa durumunu 8 boyutlu bir vektörle temsil eder,
-geçmişteki tüm günlerle kosinüs benzerliği hesaplar ve
-en benzer 5 tarihsel dönemi sonuçlarıyla birlikte döner.
+Bugünkü piyasa durumunu 14 boyutlu bir vektörle temsil eder:
+  8 teknik boyut + 6 olay kategorisi boyutu
 
-Vektör boyutları:
+Teknik boyutlar (0-7):
   0  RSI-14 normalize (0-1)
-  1  MACD histogram yönü normalize
+  1  MACD histogram yönü (-1/0/+1)
   2  Fiyat / EMA200 oranı
   3  30 günlük volatilite
   4  Hacim trendi (20g z-score)
-  5  USD/TRY 30g değişim (BIST için), SP500 30g değişim (ABD için)
-  6  Genel endeks 30g değişim (XU100 / SPY)
-  7  Momentum: 20 günlük getiri
+  5  30g momentum
+  6  20g momentum
+  7  RSI merkez sapması
+
+Olay kategorisi boyutları (8-13) — anomali varsa 1.0, yoksa 0.0:
+  8   Kur Krizi
+  9   Merkez Bankası / Faiz
+  10  Jeopolitik / Çatışma
+  11  Enerji Şoku
+  12  Salgın / Sağlık
+  13  Seçim / Siyaset
+
+Sayısal eşleşmenin yanında olay kategorisi de uyuşursa benzerlik ağırlığı artar.
+Böylece "2018 kur krizi" sadece "kur krizi dönemleri" ile eşleşir.
 """
 from __future__ import annotations
 import time
@@ -22,6 +32,19 @@ import numpy as np
 import pandas as pd
 
 from services.real_data import get_ohlcv
+from services.anomaly_detector import detect_anomalies
+from services.context_enricher import enrich_anomaly
+
+# Olay kategorisi → vektör indeksi (8-13)
+_CAT_INDEX = {
+    "Kur Krizi":             8,
+    "Merkez Bankası":        9,
+    "Jeopolitik / Çatışma": 10,
+    "Enerji Şoku":          11,
+    "Salgın / Sağlık":      12,
+    "Seçim / Siyaset":      13,
+}
+_CAT_WEIGHT = 0.6   # olay boyutlarının ağırlığı (teknik=1.0 ile karşılaştırmalı)
 
 _CACHE_TTL = 1800   # 30 dakika
 _cache: dict[str, tuple[float, dict]] = {}
@@ -46,8 +69,8 @@ def _macd_hist(series: pd.Series) -> pd.Series:
 
 def _build_vectors(df: pd.DataFrame) -> np.ndarray:
     """
-    Her gün için 8 boyutlu vektör matrisini döner.
-    Şekil: (N, 8)
+    Her gün için 14 boyutlu vektör matrisini döner.
+    Şekil: (N, 14) — 8 teknik + 6 olay kategorisi (sıfır, sonradan doldurulur)
     """
     c = df["close"].astype(float)
     v = df["volume"].astype(float) if "volume" in df.columns else pd.Series(1.0, index=c.index)
@@ -58,29 +81,68 @@ def _build_vectors(df: pd.DataFrame) -> np.ndarray:
     vol30    = c.pct_change().rolling(30).std()
     mom20    = c.pct_change(20)
 
-    # Hacim trendi z-score
     v_mean = v.rolling(20).mean()
     v_std  = v.rolling(20).std().replace(0, 1)
     v_z    = (v - v_mean) / v_std
 
-    # USD/TRY veya S&P500 proxy — sembol bilgisi olmadan yfinance'dan çekemeyiz
-    # Bunun yerine fiyatın EMA200'e oranını kullanırız
     price_ema200 = c / ema200.replace(0, np.nan)
-
-    # Genel piyasa proxy: son 30 günlük getiri
     idx30 = c.pct_change(30)
 
-    mat = np.column_stack([
-        rsi.fillna(50).values / 100,                          # 0: RSI normalize
-        np.sign(macd_h.fillna(0).values),                     # 1: MACD yönü (-1/0/+1)
-        price_ema200.fillna(1).clip(0.5, 2).values - 1,      # 2: EMA200 sapması
-        vol30.fillna(0).values * 10,                          # 3: volatilite (scale)
-        v_z.fillna(0).clip(-3, 3).values / 3,                 # 4: hacim z-score normalize
-        idx30.fillna(0).clip(-0.5, 0.5).values,               # 5: 30g momentum
-        mom20.fillna(0).clip(-0.3, 0.3).values,               # 6: 20g momentum
-        (rsi.fillna(50).values - 50) / 50,                    # 7: RSI merkez sapması
-    ])
-    return mat.astype(np.float32)
+    n = len(df)
+    mat = np.zeros((n, 14), dtype=np.float32)
+
+    # Teknik boyutlar 0-7
+    mat[:, 0] = rsi.fillna(50).values / 100
+    mat[:, 1] = np.sign(macd_h.fillna(0).values)
+    mat[:, 2] = price_ema200.fillna(1).clip(0.5, 2).values - 1
+    mat[:, 3] = vol30.fillna(0).values * 10
+    mat[:, 4] = v_z.fillna(0).clip(-3, 3).values / 3
+    mat[:, 5] = idx30.fillna(0).clip(-0.5, 0.5).values
+    mat[:, 6] = mom20.fillna(0).clip(-0.3, 0.3).values
+    mat[:, 7] = (rsi.fillna(50).values - 50) / 50
+
+    # Olay kategorisi boyutları 8-13 başlangıçta sıfır
+    # _enrich_with_events() tarafından anomali günlerinde doldurulur
+    return mat
+
+
+def _enrich_with_events(mat: np.ndarray, df: pd.DataFrame, symbol: str) -> np.ndarray:
+    """
+    Anomali günleri için olay kategorisi boyutlarını (8-13) doldurur.
+    Her anomali için context_enricher çağrılır, kategoriler vektöre yazılır.
+    Çevre maliyetini azaltmak için anomali sayısı ≤ 30 tutulur.
+    """
+    try:
+        anomalies = detect_anomalies(symbol, years=5)
+    except Exception:
+        return mat
+
+    # Tarih → satır indeksi haritası
+    date_col = "date" if "date" in df.columns else None
+    date_to_idx: dict[str, int] = {}
+    for i, row in df.iterrows():
+        d = str(row[date_col] if date_col else i)[:10]
+        date_to_idx[d] = i
+
+    # Sadece büyük anomaliler (üstten 30)
+    top_anomalies = sorted(anomalies, key=lambda x: abs(x["magnitude"]), reverse=True)[:30]
+
+    for anom in top_anomalies:
+        date_str = anom["date"]
+        idx = date_to_idx.get(date_str)
+        if idx is None:
+            continue
+        try:
+            ctx = enrich_anomaly(symbol, date_str, anom["magnitude"])
+            cats = ctx.get("categories", [])
+            for cat in cats:
+                col = _CAT_INDEX.get(cat)
+                if col is not None:
+                    mat[idx, col] = _CAT_WEIGHT
+        except Exception:
+            pass
+
+    return mat
 
 def _cosine_sim(a: np.ndarray, b: np.ndarray) -> float:
     na, nb = np.linalg.norm(a), np.linalg.norm(b)
@@ -112,6 +174,7 @@ def find_similar_periods(symbol: str, top_n: int = 5) -> dict:
 
     df = df.reset_index(drop=True)
     mat = _build_vectors(df)
+    mat = _enrich_with_events(mat, df, symbol)  # olay kategorileri ekle
 
     # Bugünkü vektör = son satır
     today_vec = mat[-1]
@@ -199,14 +262,20 @@ def find_similar_periods(symbol: str, top_n: int = 5) -> dict:
         }
 
     # Bugünkü durum özeti
-    rsi_now = float(mat[-1][0]) * 100
+    rsi_now  = float(mat[-1][0]) * 100
     macd_dir = int(mat[-1][1])
     ema_gap  = round(float(mat[-1][2]) * 100, 2)
+
+    # Aktif olay kategorileri (bugünkü vektörde 0'dan büyük olanlar)
+    idx_to_cat = {v: k for k, v in _CAT_INDEX.items()}
+    active_cats = [idx_to_cat[i] for i in range(8, 14) if mat[-1][i] > 0]
+
     current_state = {
-        "rsi":       round(rsi_now, 1),
-        "macd_direction": "pozitif" if macd_dir > 0 else ("negatif" if macd_dir < 0 else "nötr"),
-        "price_vs_ema200_pct": ema_gap,
-        "momentum_20d": round(float(mat[-1][6]) * 100, 2),
+        "rsi":                   round(rsi_now, 1),
+        "macd_direction":        "pozitif" if macd_dir > 0 else ("negatif" if macd_dir < 0 else "nötr"),
+        "price_vs_ema200_pct":   ema_gap,
+        "momentum_20d":          round(float(mat[-1][6]) * 100, 2),
+        "active_event_categories": active_cats,
     }
 
     result = {
