@@ -32,6 +32,7 @@ import { StatusBadges }         from "@/components/dashboard/StatusBadges";
 import { EventTimeline }        from "@/components/dashboard/EventTimeline";
 import { PatternMatchPanel }    from "@/components/dashboard/PatternMatchPanel";
 import { CompositeScore }       from "@/components/dashboard/CompositeScore";
+import EventForecast             from "@/components/dashboard/EventForecast";
 import { Skeleton }              from "@/components/ui/Skeleton";
 
 export default function SymbolPage({ params }: { params: Promise<{ symbol: string }> }) {
@@ -71,6 +72,9 @@ export default function SymbolPage({ params }: { params: Promise<{ symbol: strin
 
       {/* 1b. Composite Skor */}
       <CompositeScore symbol={sym} />
+
+      {/* 1c. Tarihsel Olay Zekası */}
+      <EventForecast symbol={sym} />
 
       {/* 2. İstatistik şeridi */}
       {indicators && info && <StatBar indicators={indicators} info={info} />}

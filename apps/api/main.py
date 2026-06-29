@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import symbols, analysis, risk, insights, scanner as scanner_router, tools as tools_router, news as news_router, macro as macro_router, briefing as briefing_router, research as research_router, calendar as calendar_router, portfolio_ai as portfolio_ai_router, watchlist as watchlist_router, kap as kap_router, heatmap as heatmap_router, backtest as backtest_router, correlation as correlation_router, commodity as commodity_router, hei as hei_router, ml as ml_router, portfolio as portfolio_router
+from routers import symbols, analysis, risk, insights, scanner as scanner_router, tools as tools_router, news as news_router, macro as macro_router, briefing as briefing_router, research as research_router, calendar as calendar_router, portfolio_ai as portfolio_ai_router, watchlist as watchlist_router, kap as kap_router, heatmap as heatmap_router, backtest as backtest_router, correlation as correlation_router, commodity as commodity_router, hei as hei_router, ml as ml_router, portfolio as portfolio_router, events as events_router
 
 # Load .env file if present (for local dev — ANTHROPIC_API_KEY, X_BEARER_TOKEN etc.)
 _env_file = Path(__file__).parent / ".env"
@@ -57,6 +57,7 @@ app.include_router(commodity_router.router, prefix="/api/commodity", tags=["b2b-
 app.include_router(hei_router.router, prefix="/api/hei", tags=["hei"])
 app.include_router(ml_router.router, prefix="/api/ml", tags=["ml"])
 app.include_router(portfolio_router.router, prefix="/api/portfolio", tags=["portfolio"])
+app.include_router(events_router.router, prefix="/api/events", tags=["events"])
 
 
 @app.on_event("startup")
