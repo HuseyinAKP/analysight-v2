@@ -24,6 +24,7 @@ Her backtest için gerçekçi varsayımlar:
   - Equity curve (grafik için)
 """
 from __future__ import annotations
+import statistics
 import numpy as np
 import pandas as pd
 from typing import Optional
@@ -123,16 +124,38 @@ def _signals_ml(df: pd.DataFrame, threshold: float = 55.0) -> pd.Series:
 
 
 # ── Ana simülasyon ────────────────────────────────────────────────────────────
+def _kelly_fraction(trades_so_far: list) -> float:
+    """
+    Half-Kelly pozisyon büyüklüğü — geçmiş işlemlerden hesaplanır.
+    Minimum 10 işlem gerekir, yoksa 1.0 (full) döner.
+    Maksimum 0.5 ile sınırlanır (aşırı risk önleme).
+    """
+    if len(trades_so_far) < 10:
+        return 1.0
+    wins  = [t["pnl"] for t in trades_so_far if t["pnl"] > 0]
+    losses= [abs(t["pnl"]) for t in trades_so_far if t["pnl"] <= 0]
+    if not wins or not losses:
+        return 1.0
+    win_rate = len(wins) / len(trades_so_far)
+    avg_win  = sum(wins) / len(wins)
+    avg_loss = sum(losses) / len(losses)
+    b = avg_win / avg_loss  # odds
+    kelly = (b * win_rate - (1 - win_rate)) / b
+    return max(0.1, min(0.5, kelly / 2))  # Half-Kelly, 10%-50% arası
+
+
 def run_simulation(
     df: pd.DataFrame,
     signals: pd.Series,
     initial_capital: float = 100_000,
-    stop_loss_pct: Optional[float] = None,   # ör: 0.05 = %5 stop
-    take_profit_pct: Optional[float] = None, # ör: 0.10 = %10 hedef
+    stop_loss_pct: Optional[float] = None,
+    take_profit_pct: Optional[float] = None,
+    use_kelly: bool = False,
 ) -> dict:
     """
     Sinyal serisine göre alım-satım simülasyonu yapar.
     Komisyon, spread, slippage dahildir.
+    use_kelly=True: Half-Kelly pozisyon büyüklüğü (geçmiş işlemlere göre dinamik)
     """
     close = df["Close"].astype(float)
     dates = df.index if not isinstance(df.index, pd.RangeIndex) else pd.to_datetime(df.get("Date", pd.RangeIndex(len(df))))
@@ -160,11 +183,13 @@ def run_simulation(
 
         # Al
         if sig == 1 and position == 0:
-            exec_price = price * (1 + TOTAL_COST)  # alış maliyeti
-            position   = capital / exec_price
+            exec_price = price * (1 + TOTAL_COST)
+            fraction   = _kelly_fraction(trades) if use_kelly else 1.0
+            invest     = capital * fraction
+            position   = invest / exec_price
             entry_price = exec_price
             entry_date  = date
-            capital    = 0.0
+            capital    -= invest
 
         # Sat
         elif sig == -1 and position > 0:
@@ -308,6 +333,7 @@ def run_backtest(
     # Risk
     stop_loss_pct: Optional[float] = None,
     take_profit_pct: Optional[float] = None,
+    use_kelly: bool = False,
 ) -> dict:
     # Veri çek
     yf_sym = f"{symbol}.IS" if "." not in symbol and "-" not in symbol else symbol
@@ -334,7 +360,7 @@ def run_backtest(
     else:
         return {"error": f"Bilinmeyen strateji: {strategy}"}
 
-    result = run_simulation(df, signals, initial_capital, stop_loss_pct, take_profit_pct)
+    result = run_simulation(df, signals, initial_capital, stop_loss_pct, take_profit_pct, use_kelly)
     result["symbol"]     = symbol
     result["strategy"]   = strategy
     result["start_date"] = start_date
@@ -466,7 +492,6 @@ def run_walk_forward(
     consistency = round(positive_windows / len(returns) * 100)
 
     # Beklenti: ortalama + std
-    import statistics
     avg_return = round(statistics.mean(returns), 2)
     std_return = round(statistics.stdev(returns), 2) if len(returns) > 1 else 0
 

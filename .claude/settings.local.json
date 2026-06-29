@@ -143,7 +143,20 @@
       "Bash(.venv/bin/pip show *)",
       "Bash(curl -s http://localhost:8000/api/status)",
       "Bash(curl -s http://localhost:8000/api/webhook/tradingview/test/THYAO)",
-      "Bash(curl -s http://localhost:8000/api/webhook/tradingview/feed)"
+      "Bash(curl -s http://localhost:8000/api/webhook/tradingview/feed)",
+      "Bash(curl -s http://localhost:3000/crypto)",
+      "Bash(curl -s http://localhost:3000/portfolio)",
+      "Bash(curl -s \"http://localhost:8000/api/insights/THYAO/news\")",
+      "Bash(python3 -c \"import json,sys; items=json.load\\(sys.stdin\\)['items']; print\\(items[0].get\\('typical_effect','YOK'\\)\\)\")",
+      "Bash(npx vercel *)",
+      "Bash(git add *)",
+      "Bash(git commit -m 'fix: apps/web workspace'\\\\''den çıkarıldı — bağımsız npm install *)",
+      "Bash(git push *)",
+      "Bash(grep -v \"^$\")",
+      "Bash(git commit -m 'fix: auth/login useSearchParams Suspense boundary *)",
+      "Read(//Users/huseyinakpinar/Documents/carcheck/**)",
+      "Read(//Users/huseyinakpinar/Documents/carcheck-mobile/src/**)",
+      "Bash(ls /Users/huseyinakpinar/Documents/carcheck-mobile/src/screens && ls /Users/huseyinakpinar/Documents/carcheck-mobile/src/navigation && cat /Users/huseyinakpinar/Documents/carcheck-mobile/package.json)"
     ]
   }
 }

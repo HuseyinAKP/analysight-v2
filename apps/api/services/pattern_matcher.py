@@ -1,8 +1,8 @@
 """
 HEI Katman 3 — Örüntü Eşleştirme
 
-Bugünkü piyasa durumunu 14 boyutlu bir vektörle temsil eder:
-  8 teknik boyut + 6 olay kategorisi boyutu
+Bugünkü piyasa durumunu 20 boyutlu bir vektörle temsil eder:
+  8 teknik boyut + 12 olay kategorisi boyutu
 
 Teknik boyutlar (0-7):
   0  RSI-14 normalize (0-1)
@@ -76,8 +76,8 @@ def _macd_hist(series: pd.Series) -> pd.Series:
 
 def _build_vectors(df: pd.DataFrame) -> np.ndarray:
     """
-    Her gün için 14 boyutlu vektör matrisini döner.
-    Şekil: (N, 14) — 8 teknik + 6 olay kategorisi (sıfır, sonradan doldurulur)
+    Her gün için 20 boyutlu vektör matrisini döner.
+    Şekil: (N, 20) — 8 teknik + 12 olay kategorisi (sıfır, sonradan doldurulur)
     """
     c = df["close"].astype(float)
     v = df["volume"].astype(float) if "volume" in df.columns else pd.Series(1.0, index=c.index)

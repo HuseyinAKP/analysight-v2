@@ -135,6 +135,7 @@ export default function BacktestPage() {
   // Risk
   const [stopLoss, setStopLoss]     = useState<string>("");
   const [takeProfit, setTakeProfit] = useState<string>("");
+  const [useKelly, setUseKelly]     = useState(false);
 
   const [nSplits, setNSplits] = useState(5);
 
@@ -178,6 +179,7 @@ export default function BacktestPage() {
         ml_threshold: mlThreshold,
         stop_loss_pct:   stopLoss   ? parseFloat(stopLoss) / 100   : null,
         take_profit_pct: takeProfit ? parseFloat(takeProfit) / 100 : null,
+        use_kelly:       useKelly,
       };
       const { data } = await axios.post(`${API_BASE}/api/backtest`, body);
       return data;
@@ -404,6 +406,24 @@ export default function BacktestPage() {
             {(mutation.isError || wfMutation.isError) && (
               <p className="text-red-400 text-xs text-center">
                 {((mutation.error ?? wfMutation.error) as Error)?.message}
+              </p>
+            )}
+
+            {/* Kelly toggle */}
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={useKelly}
+                onChange={(e) => setUseKelly(e.target.checked)}
+                className="w-4 h-4 accent-amber-500"
+              />
+              <span className="text-xs text-zinc-400">
+                Half-Kelly pozisyon büyüklüğü
+              </span>
+            </label>
+            {useKelly && (
+              <p className="text-xs text-zinc-600 -mt-2">
+                İlk 10 işlemden sonra geçmiş win-rate/odds'a göre dinamik lot
               </p>
             )}
 

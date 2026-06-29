@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analysight — Yatırımcı Sunumu</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: #09090b;
+    color: #f4f4f5;
+    line-height: 1.6;
+  }
+
+  .slide {
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 80px;
+    page-break-after: always;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Slide 1 — Cover */
+  .slide-cover {
+    background: linear-gradient(135deg, #09090b 0%, #0f172a 50%, #09090b 100%);
+    text-align: center;
+    align-items: center;
+  }
+
+  .slide-cover::before {
+    content: '';
+    position: absolute;
+    top: -200px; left: -200px;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(59,130,246,0.15) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+
+  .slide-cover::after {
+    content: '';
+    position: absolute;
+    bottom: -200px; right: -200px;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(139,92,246,0.1) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+
+  .logo-mark {
+    width: 72px; height: 72px;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    border-radius: 20px;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 24px;
+    font-size: 32px;
+    position: relative; z-index: 1;
+  }
+
+  .cover-title {
+    font-size: 72px;
+    font-weight: 900;
+    letter-spacing: -3px;
+    background: linear-gradient(135deg, #fff 0%, #a1a1aa 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    position: relative; z-index: 1;
+  }
+
+  .cover-subtitle {
+    font-size: 24px;
+    color: #71717a;
+    margin-top: 16px;
+    font-weight: 400;
+    position: relative; z-index: 1;
+  }
+
+  .cover-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(59,130,246,0.1);
+    border: 1px solid rgba(59,130,246,0.3);
+    border-radius: 100px;
+    padding: 8px 20px;
+    font-size: 14px;
+    color: #60a5fa;
+    margin-top: 32px;
+    position: relative; z-index: 1;
+  }
+
+  .cover-date {
+    position: absolute;
+    bottom: 40px;
+    right: 80px;
+    font-size: 13px;
+    color: #3f3f46;
+  }
+
+  /* Slide headers */
+  .slide-number {
+    position: absolute;
+    top: 40px; right: 80px;
+    font-size: 12px;
+    color: #3f3f46;
+    font-weight: 500;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .section-label {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #3b82f6;
+    margin-bottom: 16px;
+  }
+
+  .slide-title {
+    font-size: 48px;
+    font-weight: 800;
+    letter-spacing: -2px;
+    color: #f4f4f5;
+    line-height: 1.1;
+    margin-bottom: 40px;
+  }
+
+  .slide-title span {
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Cards */
+  .card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 28px;
+  }
+
+  .card-blue {
+    background: rgba(59,130,246,0.08);
+    border-color: rgba(59,130,246,0.2);
+  }
+
+  .card-purple {
+    background: rgba(139,92,246,0.08);
+    border-color: rgba(139,92,246,0.2);
+  }
+
+  .card-green {
+    background: rgba(16,185,129,0.08);
+    border-color: rgba(16,185,129,0.2);
+  }
+
+  .card-amber {
+    background: rgba(245,158,11,0.08);
+    border-color: rgba(245,158,11,0.2);
+  }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+  .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 16px; }
+
+  .stat-big {
+    font-size: 52px;
+    font-weight: 900;
+    letter-spacing: -2px;
+    line-height: 1;
+  }
+
+  .stat-label {
+    font-size: 13px;
+    color: #71717a;
+    margin-top: 8px;
+  }
+
+  .text-blue { color: #60a5fa; }
+  .text-purple { color: #a78bfa; }
+  .text-green { color: #34d399; }
+  .text-amber { color: #fbbf24; }
+
+  p { color: #a1a1aa; font-size: 16px; line-height: 1.7; }
+
+  ul { list-style: none; }
+  ul li {
+    color: #a1a1aa;
+    font-size: 15px;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  ul li:last-child { border-bottom: none; }
+  ul li::before {
+    content: '→';
+    color: #3b82f6;
+    font-weight: bold;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .check-list li::before { content: '✓'; color: #34d399; }
+  .x-list li::before { content: '✗'; color: #f87171; }
+
+  .feature-icon {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    margin-bottom: 16px;
+  }
+
+  .card h3 {
+    font-size: 18px;
+    font-weight: 700;
+    color: #f4f4f5;
+    margin-bottom: 8px;
+  }
+
+  .card p {
+    font-size: 14px;
+    color: #71717a;
+  }
+
+  .divider {
+    width: 60px; height: 3px;
+    background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+    border-radius: 2px;
+    margin-bottom: 32px;
+  }
+
+  .tech-tag {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 13px;
+    color: #a1a1aa;
+    margin: 4px;
+  }
+
+  .highlight-box {
+    background: linear-gradient(135deg, rgba(59,130,246,0.1), rgba(139,92,246,0.1));
+    border: 1px solid rgba(59,130,246,0.2);
+    border-radius: 16px;
+    padding: 32px;
+    margin-top: 24px;
+  }
+
+  .timeline {
+    position: relative;
+    padding-left: 32px;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 8px; top: 8px;
+    width: 2px;
+    height: calc(100% - 16px);
+    background: linear-gradient(180deg, #3b82f6, #8b5cf6);
+  }
+  .timeline-item {
+    position: relative;
+    padding-bottom: 28px;
+  }
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -28px; top: 6px;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: #3b82f6;
+    border: 2px solid #09090b;
+  }
+  .timeline-item h4 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #f4f4f5;
+  }
+  .timeline-item p {
+    font-size: 14px;
+    color: #71717a;
+    margin-top: 4px;
+  }
+  .timeline-item .period {
+    font-size: 12px;
+    color: #3b82f6;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .quote {
+    font-size: 28px;
+    font-weight: 700;
+    color: #f4f4f5;
+    line-height: 1.4;
+    letter-spacing: -0.5px;
+  }
+
+  .quote-author {
+    margin-top: 20px;
+    font-size: 14px;
+    color: #52525b;
+  }
+
+  .cta-section {
+    text-align: center;
+    background: linear-gradient(135deg, rgba(59,130,246,0.08), rgba(139,92,246,0.08));
+    border: 1px solid rgba(59,130,246,0.15);
+    border-radius: 20px;
+    padding: 48px;
+    margin-top: 40px;
+  }
+
+  .cta-section h2 {
+    font-size: 36px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    color: #f4f4f5;
+    margin-bottom: 16px;
+  }
+
+  .contact-row {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    margin-top: 32px;
+    flex-wrap: wrap;
+  }
+
+  .contact-item {
+    font-size: 14px;
+    color: #71717a;
+  }
+
+  .contact-item strong {
+    display: block;
+    color: #f4f4f5;
+    font-size: 16px;
+    margin-bottom: 4px;
+  }
+
+  @media print {
+    body { background: #09090b; }
+    .slide { page-break-after: always; min-height: 100vh; }
+  }
+</style>
+</head>
+<body>
+
+<!-- SLIDE 1: KAPAK -->
+<div class="slide slide-cover">
+  <div class="logo-mark">📈</div>
+  <div class="cover-title">Analysight</div>
+  <div class="cover-subtitle">Türkiye'nin İlk AI Destekli Hisse Analiz Platformu</div>
+  <div class="cover-badge">
+    <span style="width:8px;height:8px;background:#34d399;border-radius:50%;display:inline-block;"></span>
+    Seed Round — 2026
+  </div>
+  <div class="cover-date">Haziran 2026 · Gizli</div>
+</div>
+
+<!-- SLIDE 2: SORUN -->
+<div class="slide">
+  <div class="slide-number">02 / 10</div>
+  <div class="section-label">Problem</div>
+  <div class="slide-title">Türk yatırımcı <span>kör uçuyor</span></div>
+  <div class="divider"></div>
+
+  <div class="grid-2">
+    <div>
+      <p style="font-size:18px; color:#f4f4f5; margin-bottom:24px;">
+        Türkiye'de 8 milyonun üzerinde aktif borsa yatırımcısı var. Büyük çoğunluğu yeterli araç olmadan karar veriyor.
+      </p>
+      <ul class="x-list">
+        <li>Bloomberg Terminal: $24.000/yıl — ulaşılmaz</li>
+        <li>Mevcut platformlar İngilizce ve global odaklı</li>
+        <li>BIST'e özel AI analiz yok</li>
+        <li>KAP, teknik analiz ve haber entegrasyonu dağınık</li>
+        <li>Kurumsal araçlar bireysel yatırımcıya kapalı</li>
+      </ul>
+    </div>
+    <div class="card card-blue" style="display:flex;flex-direction:column;justify-content:center;gap:24px;">
+      <div>
+        <div class="stat-big text-blue">8M+</div>
+        <div class="stat-label">Türkiye'de aktif borsa hesabı (2025)</div>
+      </div>
+      <div>
+        <div class="stat-big text-blue">%340</div>
+        <div class="stat-label">Son 3 yılda yeni yatırımcı artışı</div>
+      </div>
+      <div>
+        <div class="stat-big text-blue">₺0</div>
+        <div class="stat-label">Türkçe AI destekli analiz platformu sayısı</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 3: ÇÖZÜM -->
+<div class="slide">
+  <div class="slide-number">03 / 10</div>
+  <div class="section-label">Çözüm</div>
+  <div class="slide-title">Bloomberg'in gücünü <span>herkese</span></div>
+  <div class="divider"></div>
+
+  <div class="grid-3">
+    <div class="card">
+      <div class="feature-icon" style="background:rgba(59,130,246,0.15);">🤖</div>
+      <h3>AI Analist</h3>
+      <p>Claude AI ile gerçek zamanlı Wall Street kalitesinde hisse analizi. Bear/bull senaryoları, giriş zamanlaması, risk haritası.</p>
+    </div>
+    <div class="card">
+      <div class="feature-icon" style="background:rgba(139,92,246,0.15);">🔥</div>
+      <h3>Sektör Isı Haritası</h3>
+      <p>BIST ve küresel piyasaların sektör bazlı anlık görünümü. Hangi sektörün aktığını tek bakışta anlarsınız.</p>
+    </div>
+    <div class="card">
+      <div class="feature-icon" style="background:rgba(16,185,129,0.15);">📊</div>
+      <h3>Backtest Motoru</h3>
+      <p>MA Cross, RSI, Bollinger stratejilerini geçmiş veriyle test edin. Sharpe oranı, max drawdown, kazanma oranı.</p>
+    </div>
+    <div class="card">
+      <div class="feature-icon" style="background:rgba(245,158,11,0.15);">🔗</div>
+      <h3>Korelasyon Matrisi</h3>
+      <p>Portföyünüzdeki hisselerin birbiriyle ilişkisini ölçün. Gerçek çeşitlilik analizi.</p>
+    </div>
+    <div class="card">
+      <div class="feature-icon" style="background:rgba(239,68,68,0.15);">📡</div>
+      <h3>Canlı Tarayıcı</h3>
+      <p>RSI, hacim, kırılım filtrelerine göre anlık fırsat tarayıcısı. Koşullu alarmlar.</p>
+    </div>
+    <div class="card">
+      <div class="feature-icon" style="background:rgba(59,130,246,0.15);">📱</div>
+      <h3>Mobil Uygulama</h3>
+      <p>iOS & Android native uygulama. Push notification ile anlık uyarılar. Watchlist her cihazda senkron.</p>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 4: ÜRÜN -->
+<div class="slide">
+  <div class="slide-number">04 / 10</div>
+  <div class="section-label">Ürün</div>
+  <div class="slide-title">Canlı, <span>tam çalışan</span> platform</div>
+  <div class="divider"></div>
+
+  <div class="grid-2">
+    <div>
+      <ul class="check-list">
+        <li>Gerçek zamanlı BIST & global fiyatlar (yfinance)</li>
+        <li>AI analist — Claude Sonnet 4 entegrasyonu</li>
+        <li>Kullanıcı hesabı & cloud watchlist (Supabase)</li>
+        <li>Sektör ısı haritası — squarified treemap</li>
+        <li>Strateji backtest motoru</li>
+        <li>Korelasyon matrisi & çeşitlilik skoru</li>
+        <li>KAP bildirim takibi</li>
+        <li>Ekonomik takvim (TCMB, Fed, CPI)</li>
+        <li>Sanal portföy (paper trading)</li>
+        <li>Sabah brifing & piyasa özeti</li>
+      </ul>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:16px;">
+      <div class="card card-green">
+        <h3 style="color:#34d399;">🚀 Üretimde</h3>
+        <p>Platform bugün itibariyle canlı. Vercel (web) + Railway (API) altyapısı üzerinde deploy edildi.</p>
+        <div style="margin-top:12px;font-size:13px;color:#52525b;">analysightv2.vercel.app</div>
+      </div>
+      <div class="card">
+        <h3>Teknik Altyapı</h3>
+        <div style="margin-top:8px;">
+          <span class="tech-tag">Next.js 15</span>
+          <span class="tech-tag">FastAPI</span>
+          <span class="tech-tag">Claude AI</span>
+          <span class="tech-tag">Supabase</span>
+          <span class="tech-tag">Railway</span>
+          <span class="tech-tag">Vercel</span>
+          <span class="tech-tag">React Native</span>
+          <span class="tech-tag">TypeScript</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 5: PAZAR -->
+<div class="slide">
+  <div class="slide-number">05 / 10</div>
+  <div class="section-label">Pazar Fırsatı</div>
+  <div class="slide-title">Büyüyen bir <span>piyasa</span></div>
+  <div class="divider"></div>
+
+  <div class="grid-3" style="margin-bottom:32px;">
+    <div class="card card-blue" style="text-align:center;">
+      <div class="stat-big text-blue" style="font-size:40px;">₺42T</div>
+      <div class="stat-label">BIST toplam piyasa değeri</div>
+    </div>
+    <div class="card card-purple" style="text-align:center;">
+      <div class="stat-big text-purple" style="font-size:40px;">8.2M</div>
+      <div class="stat-label">Aktif borsa yatırımcısı</div>
+    </div>
+    <div class="card card-green" style="text-align:center;">
+      <div class="stat-big text-green" style="font-size:40px;">$4.2B</div>
+      <div class="stat-label">Global fintech analiz pazar büyüklüğü</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h3>Hedef Segment</h3>
+      <ul>
+        <li>25–45 yaş, aktif bireysel yatırımcı</li>
+        <li>Aylık 10+ işlem yapan trader</li>
+        <li>BIST'te en az ₺50.000 portföy</li>
+        <li>Mobil-first kullanıcı profili</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Rakip Analizi</h3>
+      <ul>
+        <li>Bloomberg Terminal — $24K/yıl, bireysel değil</li>
+        <li>TradingView — global, Türkçe AI yok</li>
+        <li>IsYatirim/Matriks — legacy, AI yok</li>
+        <li>Analysight — Türkçe, AI-first, uygun fiyat ✓</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 6: İŞ MODELİ -->
+<div class="slide">
+  <div class="slide-number">06 / 10</div>
+  <div class="section-label">İş Modeli</div>
+  <div class="slide-title">Freemium → <span>SaaS</span></div>
+  <div class="divider"></div>
+
+  <div class="grid-3">
+    <div class="card">
+      <div style="font-size:24px;margin-bottom:16px;">🆓</div>
+      <h3>Ücretsiz</h3>
+      <div style="font-size:28px;font-weight:800;color:#f4f4f5;margin:12px 0;">₺0</div>
+      <ul style="margin-top:16px;">
+        <li>Temel hisse analizi</li>
+        <li>5 sembol watchlist</li>
+        <li>Günlük 10 AI sorgu</li>
+        <li>Isı haritası görüntüleme</li>
+      </ul>
+    </div>
+    <div class="card card-blue" style="position:relative;">
+      <div style="position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:white;font-size:11px;font-weight:700;padding:4px 12px;border-radius:100px;">EN POPÜLER</div>
+      <div style="font-size:24px;margin-bottom:16px;">⚡</div>
+      <h3>Pro</h3>
+      <div style="font-size:28px;font-weight:800;color:#60a5fa;margin:12px 0;">₺299<span style="font-size:14px;color:#71717a;">/ay</span></div>
+      <ul style="margin-top:16px;">
+        <li>Sınırsız AI analist sorgusu</li>
+        <li>Sınırsız watchlist & portföy</li>
+        <li>Backtest motoru</li>
+        <li>Korelasyon matrisi</li>
+        <li>Mobil uygulama</li>
+        <li>Push notification alarmları</li>
+      </ul>
+    </div>
+    <div class="card card-purple">
+      <div style="font-size:24px;margin-bottom:16px;">🏢</div>
+      <h3>Kurumsal</h3>
+      <div style="font-size:28px;font-weight:800;color:#a78bfa;margin:12px 0;">₺2.999<span style="font-size:14px;color:#71717a;">/ay</span></div>
+      <ul style="margin-top:16px;">
+        <li>Çoklu kullanıcı (10 kişi)</li>
+        <li>API erişimi</li>
+        <li>Özel raporlama</li>
+        <li>Öncelikli destek</li>
+        <li>White-label seçeneği</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="highlight-box" style="margin-top:24px;">
+    <div class="grid-3" style="text-align:center;">
+      <div>
+        <div style="font-size:28px;font-weight:800;color:#f4f4f5;">1.000</div>
+        <div style="font-size:13px;color:#71717a;margin-top:4px;">Pro kullanıcı hedefi (Yıl 1)</div>
+      </div>
+      <div>
+        <div style="font-size:28px;font-weight:800;color:#34d399;">₺3.6M</div>
+        <div style="font-size:13px;color:#71717a;margin-top:4px;">Yıllık gelir hedefi (Yıl 1)</div>
+      </div>
+      <div>
+        <div style="font-size:28px;font-weight:800;color:#60a5fa;">%85</div>
+        <div style="font-size:13px;color:#71717a;margin-top:4px;">Brüt kar marjı (SaaS)</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 7: YOL HARİTASI -->
+<div class="slide">
+  <div class="slide-number">07 / 10</div>
+  <div class="section-label">Yol Haritası</div>
+  <div class="slide-title">12 aylık <span>büyüme planı</span></div>
+  <div class="divider"></div>
+
+  <div class="grid-2">
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="period">Q3 2026 — Şimdi</div>
+        <h4>MVP Tamamlandı ✓</h4>
+        <p>Web platform, AI analist, backtest, korelasyon, deploy canlı</p>
+      </div>
+      <div class="timeline-item">
+        <div class="period">Q4 2026</div>
+        <h4>Mobil Lansmanı & Monetizasyon</h4>
+        <p>iOS/Android app store, ödeme altyapısı, ilk 500 ücretli kullanıcı</p>
+      </div>
+      <div class="timeline-item">
+        <div class="period">Q1 2027</div>
+        <h4>Büyüme & Ortaklıklar</h4>
+        <p>Aracı kurum API entegrasyonları, sosyal trading özellikleri, 2.000 kullanıcı</p>
+      </div>
+      <div class="timeline-item">
+        <div class="period">Q2 2027</div>
+        <h4>Kurumsal & Bölgesel Genişleme</h4>
+        <p>Kurumsal paket, MENA pazarı, Series A hazırlığı</p>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:16px;">
+      <div class="card card-green">
+        <h3>✅ Tamamlandı</h3>
+        <ul class="check-list" style="margin-top:8px;">
+          <li>AI analist (Claude entegrasyonu)</li>
+          <li>Sektör ısı haritası (BIST + Global)</li>
+          <li>Backtest motoru (3 strateji)</li>
+          <li>Korelasyon matrisi</li>
+          <li>Supabase Auth & cloud sync</li>
+          <li>Production deploy</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>🚧 Geliştirme Aşamasında</h3>
+        <ul style="margin-top:8px;">
+          <li>React Native mobil uygulama</li>
+          <li>Ödeme sistemi entegrasyonu</li>
+          <li>Push notification altyapısı</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 8: REKABET AVANTAJI -->
+<div class="slide">
+  <div class="slide-number">08 / 10</div>
+  <div class="section-label">Rekabet Avantajı</div>
+  <div class="slide-title">Neden <span>Analysight</span> kazanır?</div>
+  <div class="divider"></div>
+
+  <div class="grid-2" style="margin-bottom:28px;">
+    <div class="card card-blue">
+      <h3 style="color:#60a5fa;">🇹🇷 Türkiye'ye Özel</h3>
+      <p style="margin-top:8px;">BIST sembollerine optimize, Türkçe AI yanıtlar, KAP entegrasyonu, TCMB takvimi. Hiçbir global platform bunu yapmıyor.</p>
+    </div>
+    <div class="card card-purple">
+      <h3 style="color:#a78bfa;">🤖 AI-First Mimari</h3>
+      <p style="margin-top:8px;">Claude Sonnet 4 ile kurumsal kalitede analiz. Her kullanıcı kendi AI analistine sahip olur.</p>
+    </div>
+    <div class="card card-green">
+      <h3 style="color:#34d399;">⚡ Hız Avantajı</h3>
+      <p style="margin-top:8px;">MVP 3 ayda tamamlandı, canlıya alındı. Rakipler yavaş kurumsal şirketler, biz agile hareket ediyoruz.</p>
+    </div>
+    <div class="card card-amber">
+      <h3 style="color:#fbbf24;">💰 Uygun Fiyat</h3>
+      <p style="margin-top:8px;">Bloomberg Terminal'in 1/80'i fiyatına kurumsal kalite. Fiyat-değer dengesi kategoride en iyi.</p>
+    </div>
+  </div>
+
+  <div class="highlight-box">
+    <div class="quote">"Türkiye'de AI destekli finans platformu pazarı henüz açılmış kapı. İlk güçlü oyuncu bu pazarı şekillendirecek."</div>
+    <div class="quote-author">— Analysight Kurucu Ekibi</div>
+  </div>
+</div>
+
+<!-- SLIDE 9: YATIRIM TALEBİ -->
+<div class="slide">
+  <div class="slide-number">09 / 10</div>
+  <div class="section-label">Finansman</div>
+  <div class="slide-title">Seed Round: <span>$500K</span></div>
+  <div class="divider"></div>
+
+  <div class="grid-2">
+    <div>
+      <div class="card" style="margin-bottom:20px;">
+        <h3>Kullanım Alanları</h3>
+        <div style="margin-top:16px;display:flex;flex-direction:column;gap:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="color:#a1a1aa;font-size:14px;">Ürün & Geliştirme</span>
+            <span style="color:#60a5fa;font-weight:700;">%40 — $200K</span>
+          </div>
+          <div style="height:6px;background:#1f1f23;border-radius:3px;"><div style="width:40%;height:100%;background:linear-gradient(90deg,#3b82f6,#60a5fa);border-radius:3px;"></div></div>
+
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="color:#a1a1aa;font-size:14px;">Pazarlama & Büyüme</span>
+            <span style="color:#a78bfa;font-weight:700;">%30 — $150K</span>
+          </div>
+          <div style="height:6px;background:#1f1f23;border-radius:3px;"><div style="width:30%;height:100%;background:linear-gradient(90deg,#8b5cf6,#a78bfa);border-radius:3px;"></div></div>
+
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="color:#a1a1aa;font-size:14px;">Altyapı & AI API</span>
+            <span style="color:#34d399;font-weight:700;">%20 — $100K</span>
+          </div>
+          <div style="height:6px;background:#1f1f23;border-radius:3px;"><div style="width:20%;height:100%;background:linear-gradient(90deg,#10b981,#34d399);border-radius:3px;"></div></div>
+
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="color:#a1a1aa;font-size:14px;">Hukuki & Operasyon</span>
+            <span style="color:#fbbf24;font-weight:700;">%10 — $50K</span>
+          </div>
+          <div style="height:6px;background:#1f1f23;border-radius:3px;"><div style="width:10%;height:100%;background:linear-gradient(90deg,#f59e0b,#fbbf24);border-radius:3px;"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:16px;">
+      <div class="card card-blue">
+        <h3>Round Detayları</h3>
+        <ul style="margin-top:12px;">
+          <li>Hedef: $500.000 Seed</li>
+          <li>Araç: Convertible Note / SAFE</li>
+          <li>Valuation Cap: $3M pre-money</li>
+          <li>Minimum ticket: $25.000</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>18 Ay Projeksiyonu</h3>
+        <ul>
+          <li>5.000 aktif kullanıcı</li>
+          <li>1.000 ücretli Pro hesap</li>
+          <li>₺3.6M ARR</li>
+          <li>Series A hazırlığı</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 10: İLETİŞİM -->
+<div class="slide" style="justify-content:center;align-items:center;text-align:center;">
+  <div class="slide-number">10 / 10</div>
+
+  <div class="logo-mark" style="margin:0 auto 24px;">📈</div>
+  <div style="font-size:48px;font-weight:900;letter-spacing:-2px;color:#f4f4f5;margin-bottom:8px;">Analysight</div>
+  <div style="font-size:18px;color:#52525b;margin-bottom:48px;">Türkiye'nin AI Analistleri</div>
+
+  <div class="cta-section">
+    <h2>Birlikte inşa edelim</h2>
+    <p style="font-size:18px;color:#71717a;max-width:500px;margin:0 auto;">
+      Türk yatırımcısına kurumsal kalitede araçlar sunmak için yatırımcı arıyoruz.
+    </p>
+    <div class="contact-row">
+      <div class="contact-item">
+        <strong>Hüseyin Akpınar</strong>
+        Kurucu & CEO
+      </div>
+      <div class="contact-item">
+        <strong>huseyn.akpinar58@gmail.com</strong>
+        E-posta
+      </div>
+      <div class="contact-item">
+        <strong>github.com/HuseyinAKP/analysight-v2</strong>
+        GitHub
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:48px;font-size:13px;color:#27272a;">
+    Bu sunum gizlidir ve yalnızca muhtemel yatırımcılara yöneliktir. · Haziran 2026
+  </div>
+</div>
+
+</body>
+</html>

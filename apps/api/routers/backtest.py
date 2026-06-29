@@ -25,8 +25,9 @@ class BacktestRequest(BaseModel):
     # ML
     ml_threshold: float = 55.0
     # Risk
-    stop_loss_pct: Optional[float] = None    # ör: 0.05
-    take_profit_pct: Optional[float] = None  # ör: 0.10
+    stop_loss_pct: Optional[float] = None
+    take_profit_pct: Optional[float] = None
+    use_kelly: bool = False
 
 
 @router.post("/api/backtest")
@@ -49,6 +50,7 @@ async def run_backtest_endpoint(req: BacktestRequest):
             ml_threshold=req.ml_threshold,
             stop_loss_pct=req.stop_loss_pct,
             take_profit_pct=req.take_profit_pct,
+            use_kelly=req.use_kelly,
         )
         if "error" in result:
             raise HTTPException(status_code=400, detail=result["error"])
