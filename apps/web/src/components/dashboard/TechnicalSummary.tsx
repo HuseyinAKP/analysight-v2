@@ -274,6 +274,12 @@ Bu sinyal tek başına yeterli değildir. Hacim, haber akışı ve makro görün
 }
 
 // ── Main Component ────────────────────────────────────────────────────────────
+const _TV_REC_TR: Record<string, string> = {
+  STRONG_BUY: "Güçlü Al", BUY: "Al", NEUTRAL: "Nötr",
+  SELL: "Sat", STRONG_SELL: "Güçlü Sat",
+};
+function _tvRecTr(r: string) { return _TV_REC_TR[r] ?? r; }
+
 interface Props { indicators: Indicators; symbol: string }
 
 export function TechnicalSummary({ indicators, symbol }: Props) {
@@ -300,6 +306,44 @@ export function TechnicalSummary({ indicators, symbol }: Props) {
         <h2 className="text-sm font-semibold text-zinc-300">Teknik Özet</h2>
         <span className="text-[10px] text-zinc-600">Investing.com tarzı</span>
       </div>
+
+      {/* TradingView Gerçek Rating */}
+      {indicators.tv_rating && (
+        <div className="px-4 py-3 border-b border-zinc-800 bg-zinc-950/50">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wide flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />
+              TradingView Rating
+            </span>
+            <span className="text-[10px] text-zinc-600">Gerçek zamanlı</span>
+          </div>
+          <div className="flex items-center gap-4">
+            {/* Ana öneri */}
+            <div className={cn(
+              "px-3 py-1.5 rounded-lg text-sm font-bold border",
+              indicators.tv_rating.recommendation === "STRONG_BUY"  ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400" :
+              indicators.tv_rating.recommendation === "BUY"         ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-300" :
+              indicators.tv_rating.recommendation === "STRONG_SELL" ? "bg-red-500/15 border-red-500/30 text-red-400" :
+              indicators.tv_rating.recommendation === "SELL"        ? "bg-red-500/10 border-red-500/20 text-red-300" :
+                                                                       "bg-zinc-800 border-zinc-700 text-zinc-300"
+            )}>
+              {indicators.tv_rating.recommendation_tr}
+            </div>
+            {/* Ossilatör + MA */}
+            <div className="flex gap-3 text-xs text-zinc-500">
+              <span>Osilatör: <strong className="text-zinc-300">{_tvRecTr(indicators.tv_rating.oscillators.recommendation)}</strong></span>
+              <span>·</span>
+              <span>MA: <strong className="text-zinc-300">{_tvRecTr(indicators.tv_rating.moving_averages.recommendation)}</strong></span>
+            </div>
+            {/* Al/Sat/Nötr sayaçlar */}
+            <div className="ml-auto flex gap-2 text-[10px]">
+              <span className="text-emerald-400">{(indicators.tv_rating.oscillators.buy ?? 0) + (indicators.tv_rating.moving_averages.buy ?? 0)} Al</span>
+              <span className="text-zinc-500">{(indicators.tv_rating.oscillators.neutral ?? 0) + (indicators.tv_rating.moving_averages.neutral ?? 0)} Nötr</span>
+              <span className="text-red-400">{(indicators.tv_rating.oscillators.sell ?? 0) + (indicators.tv_rating.moving_averages.sell ?? 0)} Sat</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Summary row */}
       <div className="flex items-center gap-6 px-4 py-4 border-b border-zinc-800">

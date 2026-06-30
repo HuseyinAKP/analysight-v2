@@ -156,7 +156,8 @@
       "Bash(git commit -m 'fix: auth/login useSearchParams Suspense boundary *)",
       "Read(//Users/huseyinakpinar/Documents/carcheck/**)",
       "Read(//Users/huseyinakpinar/Documents/carcheck-mobile/src/**)",
-      "Bash(ls /Users/huseyinakpinar/Documents/carcheck-mobile/src/screens && ls /Users/huseyinakpinar/Documents/carcheck-mobile/src/navigation && cat /Users/huseyinakpinar/Documents/carcheck-mobile/package.json)"
+      "Bash(ls /Users/huseyinakpinar/Documents/carcheck-mobile/src/screens && ls /Users/huseyinakpinar/Documents/carcheck-mobile/src/navigation && cat /Users/huseyinakpinar/Documents/carcheck-mobile/package.json)",
+      "Bash(curl -s https://feisty-success-production-39f6.up.railway.app/openapi.json)"
     ]
   }
 }

@@ -48,6 +48,17 @@ export interface Indicators {
   adx?: number;
   williams_r?: number;
   confluence: Confluence;
+  tv_rating?: {
+    recommendation: string;
+    recommendation_tr: string;
+    oscillators: { recommendation: string; buy: number; sell: number; neutral: number };
+    moving_averages: { recommendation: string; buy: number; sell: number; neutral: number };
+  } | null;
+  tv_multiframe?: Record<string, {
+    recommendation: string; recommendation_tr: string;
+    oscillators: string; moving_averages: string;
+    buy: number; sell: number; neutral: number;
+  }> | null;
   series: {
     rsi: number[];
     macd: number[];

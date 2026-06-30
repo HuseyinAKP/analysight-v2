@@ -40,7 +40,19 @@ def get_indicators(symbol: str, days: int = 200):
     df = get_ohlcv(symbol, days=days)
     if df is None or df.empty:
         raise HTTPException(status_code=404, detail=f"No data for {symbol}")
-    return build_indicators(df)
+    result = build_indicators(df)
+
+    # TradingView gerçek rating'i ekle (arka planda, hata olursa None)
+    try:
+        from services.tv_ratings import get_tv_rating, get_tv_multiframe
+        tv = get_tv_rating(symbol)
+        result["tv_rating"] = tv
+        result["tv_multiframe"] = get_tv_multiframe(symbol) if tv else None
+    except Exception:
+        result["tv_rating"] = None
+        result["tv_multiframe"] = None
+
+    return result
 
 
 @router.get("/{symbol}/scenarios")
