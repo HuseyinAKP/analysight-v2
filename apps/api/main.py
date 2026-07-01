@@ -57,7 +57,11 @@ app.include_router(commodity_router.router, prefix="/api/commodity", tags=["b2b-
 app.include_router(hei_router.router, prefix="/api/hei", tags=["hei"])
 app.include_router(ml_router.router, prefix="/api/ml", tags=["ml"])
 app.include_router(portfolio_router.router, prefix="/api/portfolio", tags=["portfolio"])
-app.include_router(events_router.router, prefix="/api/events", tags=["events"])
+try:
+    app.include_router(events_router.router, prefix="/api/events", tags=["events"])
+    print("[startup] events router OK")
+except Exception as _e:
+    print(f"[startup] events router FAILED: {_e}")
 
 
 @app.on_event("startup")
