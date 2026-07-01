@@ -22,6 +22,7 @@ const NAV_GROUPS = [
       { href: "/calendar",  label: "Ekonomik Takvim", desc: "TCMB, Fed, CPI, GDP takvimi" },
       { href: "/heatmap",   label: "Isı Haritası",    desc: "Sektör bazlı piyasa görünümü" },
       { href: "/ipo",       label: "Halka Arzlar",    desc: "BIST'e yeni kote şirketler" },
+      { href: "/funds",     label: "Yatırım Fonları", desc: "TEFAS fon listesi ve getiri analizi" },
       { href: "/crypto",    label: "Kripto",          desc: "BTC, ETH ve DeFi takibi" },
     ],
   },
