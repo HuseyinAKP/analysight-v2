@@ -98,16 +98,37 @@ export interface FundamentalsData {
   symbol: string;
   available: boolean;
   reason?: string;
+  company?: string;
   sector?: string;
+  industry?: string;
+  currency?: string;
   valuation?: {
-    pe: number; pb: number; ps: number; roe_pct: number;
-    debt_equity: number; sector_avg_pe: number; pe_vs_sector: string;
+    pe: number | null; forward_pe: number | null; pb: number | null;
+    ps: number | null; ev_ebitda: number | null; ev_revenue: number | null;
+    sector_avg_pe: number | null; pe_vs_sector: string | null;
+    beta: number | null; short_pct: number | null;
   };
-  annual?: { revenue_b: number; net_income_b: number; net_margin_pct: number };
+  profitability?: {
+    gross_margin: number | null; operating_margin: number | null;
+    net_margin: number | null; roe: number | null; roa: number | null;
+  };
+  growth?: { revenue_growth_yoy: number | null; earnings_growth_yoy: number | null };
+  balance_sheet?: {
+    market_cap: number | null; revenue_ttm: number | null; net_income_ttm: number | null;
+    total_debt: number | null; total_cash: number | null; free_cashflow: number | null;
+    debt_to_equity: number | null; current_ratio: number | null; quick_ratio: number | null;
+  };
+  per_share?: {
+    eps_ttm: number | null; eps_forward: number | null;
+    week52_high: number | null; week52_low: number | null;
+  };
+  analyst?: {
+    recommendation: string | null; target_mean: number | null;
+    target_high: number | null; target_low: number | null; num_analysts: number | null;
+  };
   quarters?: {
-    quarter: string; revenue_b: number; net_income_b: number;
-    eps_actual: number; eps_estimate: number; beat: boolean;
-    revenue_growth_yoy: number; net_margin_pct: number;
+    period: string; revenue: number | null; net_income: number | null;
+    gross_profit: number | null; net_margin: number | null;
   }[];
   insights?: string[];
 }

@@ -157,7 +157,17 @@
       "Read(//Users/huseyinakpinar/Documents/carcheck/**)",
       "Read(//Users/huseyinakpinar/Documents/carcheck-mobile/src/**)",
       "Bash(ls /Users/huseyinakpinar/Documents/carcheck-mobile/src/screens && ls /Users/huseyinakpinar/Documents/carcheck-mobile/src/navigation && cat /Users/huseyinakpinar/Documents/carcheck-mobile/package.json)",
-      "Bash(curl -s https://feisty-success-production-39f6.up.railway.app/openapi.json)"
+      "Bash(curl -s https://feisty-success-production-39f6.up.railway.app/openapi.json)",
+      "Bash(curl -s --max-time 10 https://feisty-success-production-39f6.up.railway.app/)",
+      "Bash(curl -s --max-time 20 https://feisty-success-production-39f6.up.railway.app/api/analysis/THYAO/indicators)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('tv_rating:', d.get\\('tv_rating'\\)\\); print\\('confluence score:', d.get\\('confluence',{}\\).get\\('score'\\)\\)\")",
+      "Bash(pip install *)",
+      "Bash(curl -s --max-time 30 https://feisty-success-production-39f6.up.railway.app/api/briefing/morning)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('opportunities:', len\\(d.get\\('opportunities',[]\\)\\), 'adet'\\); [print\\(' -', o['symbol'], o['score']\\) for o in d.get\\('opportunities',[]\\)]\")",
+      "Bash(curl -s --max-time 15 https://feisty-success-production-39f6.up.railway.app/api/analysis/THYAO/indicators)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); tv=d['tv_rating']; print\\('TV Rating:', tv['recommendation_tr'], '| Osc:', tv['oscillators']['recommendation'], '| MA:', tv['moving_averages']['recommendation']\\)\")",
+      "Bash(pandoc \"Introduction&Literature Review.docx\" -t plain)",
+      "Bash(pandoc \"/Users/huseyinakpinar/Desktop/MSc/MS Project/Bitirme Projesi/Güncel Proje/Introduction&Literature Review.docx\" -t plain)"
     ]
   }
 }

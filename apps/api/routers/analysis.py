@@ -8,6 +8,7 @@ from services.real_data import get_ohlcv, get_symbol_info, SYMBOL_META
 from services.technical_analysis import build_indicators
 from services.scenario_engine import build_scenarios
 from services.risk_engine import calc_risk
+from services.fundamentals import get_fundamentals
 
 router = APIRouter()
 
@@ -173,85 +174,10 @@ def get_multiframe(symbol: str):
 
 
 @router.get("/{symbol}/fundamentals")
-def get_fundamentals(symbol: str):
-    """Company fundamental data — revenue, earnings, margins, valuation multiples."""
-    symbol = symbol.upper()
-    pass  # open to all symbols
-
-    import random, math
-    random.seed(hash(symbol) % 2**31)
-
-    # Mock per-symbol fundamentals
-    _BASE = {
-        "THYAO": {"revenue_b": 12.4, "net_income_b": 1.8, "pe": 6.2,  "pb": 1.1, "ps": 0.5,  "roe": 28.4, "debt_equity": 1.8, "sector": "Havacılık"},
-        "GARAN": {"revenue_b": 8.9,  "net_income_b": 3.2, "pe": 4.8,  "pb": 0.9, "ps": 0.7,  "roe": 19.2, "debt_equity": 5.2, "sector": "Bankacılık"},
-        "EREGL": {"revenue_b": 6.1,  "net_income_b": 0.9, "pe": 7.4,  "pb": 1.3, "ps": 1.1,  "roe": 17.6, "debt_equity": 0.4, "sector": "Çelik"},
-        "SISE":  {"revenue_b": 4.8,  "net_income_b": 0.7, "pe": 8.9,  "pb": 1.5, "ps": 1.8,  "roe": 16.8, "debt_equity": 0.6, "sector": "Cam"},
-        "ASELS": {"revenue_b": 3.2,  "net_income_b": 0.5, "pe": 14.2, "pb": 3.1, "ps": 3.9,  "roe": 21.4, "debt_equity": 0.3, "sector": "Savunma"},
-        "AAPL":  {"revenue_b": 394.0,"net_income_b": 100.0,"pe": 28.4,"pb": 45.2,"ps": 7.1,  "roe": 160.1,"debt_equity": 1.8,"sector": "Teknoloji"},
-        "MSFT":  {"revenue_b": 212.0,"net_income_b": 72.0, "pe": 34.1,"pb": 12.4,"ps": 11.5, "roe": 38.2, "debt_equity": 0.3,"sector": "Teknoloji"},
-        "NVDA":  {"revenue_b": 60.9, "net_income_b": 29.8, "pe": 58.2,"pb": 22.1,"ps": 19.8, "roe": 91.3, "debt_equity": 0.4,"sector": "Yarı İletken"},
-        "BTC-USD":{"revenue_b": None,"net_income_b": None, "pe": None, "pb": None,"ps": None, "roe": None, "debt_equity": None,"sector": "Kripto"},
-        "ETH-USD":{"revenue_b": None,"net_income_b": None, "pe": None, "pb": None,"ps": None, "roe": None, "debt_equity": None,"sector": "Kripto"},
-    }
-
-    base = _BASE.get(symbol, {"revenue_b": 5.0, "net_income_b": 0.8, "pe": 12.0, "pb": 2.0, "ps": 2.0, "roe": 15.0, "debt_equity": 0.5, "sector": "Diğer"})
-
-    if base["revenue_b"] is None:
-        return {"symbol": symbol, "available": False, "reason": "Kripto varlıklar için bilanço verisi mevcut değildir."}
-
-    # Generate 4-quarter revenue/earnings trend
-    rev = base["revenue_b"]
-    ni = base["net_income_b"]
-    quarters = []
-    for i in range(4, 0, -1):
-        growth = random.uniform(0.03, 0.12)
-        beat = random.choice([True, True, False])
-        q_rev = round(rev / 4 * (1 - growth * i * 0.1), 2)
-        q_ni = round(ni / 4 * (1 - growth * i * 0.1), 2)
-        est_ni = round(q_ni * (0.95 if beat else 1.05), 2)
-        quarters.append({
-            "quarter": f"Q{5-i} 2025",
-            "revenue_b": q_rev,
-            "net_income_b": q_ni,
-            "eps_actual": round(q_ni * 1e9 / 5e9, 2),
-            "eps_estimate": round(est_ni * 1e9 / 5e9, 2),
-            "beat": beat,
-            "revenue_growth_yoy": round(growth * 100, 1),
-            "net_margin_pct": round(q_ni / q_rev * 100, 1) if q_rev else 0,
-        })
-
-    # Sector peer comparison
-    sector_avg_pe = {"Teknoloji": 32.0, "Bankacılık": 6.0, "Havacılık": 9.0, "Çelik": 8.0, "Cam": 10.0, "Savunma": 18.0, "Yarı İletken": 50.0, "Kripto": None, "Diğer": 15.0}
-    avg_pe = sector_avg_pe.get(base["sector"], 15.0)
-    pe_vs_sector = "ucuz" if (base["pe"] and avg_pe and base["pe"] < avg_pe * 0.85) else ("pahalı" if (base["pe"] and avg_pe and base["pe"] > avg_pe * 1.15) else "uygun")
-
-    return {
-        "symbol": symbol,
-        "available": True,
-        "sector": base["sector"],
-        "valuation": {
-            "pe": base["pe"],
-            "pb": base["pb"],
-            "ps": base["ps"],
-            "roe_pct": base["roe"],
-            "debt_equity": base["debt_equity"],
-            "sector_avg_pe": avg_pe,
-            "pe_vs_sector": pe_vs_sector,
-        },
-        "annual": {
-            "revenue_b": base["revenue_b"],
-            "net_income_b": base["net_income_b"],
-            "net_margin_pct": round(base["net_income_b"] / base["revenue_b"] * 100, 1),
-        },
-        "quarters": quarters,
-        "insights": [
-            f"{'Son çeyrekte kazanç beklentiyi aştı' if quarters[-1]['beat'] else 'Son çeyrekte kazanç beklentinin altında kaldı'}",
-            f"Net marj: %{quarters[-1]['net_margin_pct']} — {'güçlü' if quarters[-1]['net_margin_pct'] > 20 else ('orta' if quarters[-1]['net_margin_pct'] > 10 else 'düşük')}",
-            f"F/K oranı {base['pe']:.1f}x — sektör ortalaması {avg_pe:.1f}x ile karşılaştırıldığında {pe_vs_sector}",
-            f"ROE %{base['roe']:.1f} — sermaye verimliliği {'yüksek' if base['roe'] > 20 else 'orta'}",
-        ],
-    }
+def get_fundamentals_endpoint(symbol: str):
+    """Gerçek temel analiz verisi — yfinance (PE, bilanço, gelir tablosu, analist hedefleri)."""
+    symbol = _require_symbol(symbol)
+    return get_fundamentals(symbol)
 
 
 # ── Claude Prompt Analyzer ─────────────────────────────────────────────────────
