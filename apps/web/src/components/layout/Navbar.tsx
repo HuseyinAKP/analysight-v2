@@ -21,6 +21,7 @@ const NAV_GROUPS = [
       { href: "/news",      label: "Haberler",        desc: "Gerçek zamanlı haber & KAP akışı" },
       { href: "/calendar",  label: "Ekonomik Takvim", desc: "TCMB, Fed, CPI, GDP takvimi" },
       { href: "/heatmap",   label: "Isı Haritası",    desc: "Sektör bazlı piyasa görünümü" },
+      { href: "/ipo",       label: "Halka Arzlar",    desc: "BIST'e yeni kote şirketler" },
       { href: "/crypto",    label: "Kripto",          desc: "BTC, ETH ve DeFi takibi" },
     ],
   },
