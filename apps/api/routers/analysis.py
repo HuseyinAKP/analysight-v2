@@ -173,6 +173,18 @@ def get_multiframe(symbol: str):
     return {"symbol": symbol, "frames": result}
 
 
+@router.get("/{symbol}/patterns")
+def get_patterns(symbol: str, days: int = 120):
+    """Klasik teknik formasyon tespiti — baş-omuz, çift dip/tepe, üçgen, bayrak, kama."""
+    symbol = _require_symbol(symbol)
+    df = get_ohlcv(symbol, days=days)
+    if df is None or df.empty:
+        raise HTTPException(status_code=404, detail=f"No data for {symbol}")
+    from services.pattern_detector import detect_patterns
+    patterns = detect_patterns(df)
+    return {"symbol": symbol, "patterns": patterns, "count": len(patterns)}
+
+
 @router.get("/{symbol}/fundamentals")
 def get_fundamentals_endpoint(symbol: str):
     """Gerçek temel analiz verisi — yfinance (PE, bilanço, gelir tablosu, analist hedefleri)."""
