@@ -20,4 +20,6 @@ COPY . .
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# Railway $PORT ortam değişkenini shell ile genişlet
+ENTRYPOINT []
+CMD ["sh", "-c", "exec uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]
