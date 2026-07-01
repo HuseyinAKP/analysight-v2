@@ -3,11 +3,10 @@
   "configurations": [
     {
       "name": "analysight-web",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeExecutable": "/Users/huseyinakpinar/Documents/analysight_v2/apps/web/node_modules/.bin/next",
+      "runtimeArgs": ["dev", "--port", "3000"],
       "cwd": "/Users/huseyinakpinar/Documents/analysight_v2/apps/web",
-      "port": 3000,
-      "autoPort": true
+      "port": 3000
     }
   ]
 }
