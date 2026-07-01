@@ -192,6 +192,17 @@ def get_fundamentals_endpoint(symbol: str):
     return get_fundamentals(symbol)
 
 
+@router.get("/{symbol}/money-flow")
+def get_money_flow(symbol: str, days: int = 90):
+    """Para giriş-çıkış analizi — OBV, MFI, CMF, hacim spike tespiti."""
+    symbol = _require_symbol(symbol)
+    df = get_ohlcv(symbol, days=days)
+    if df is None or df.empty:
+        raise HTTPException(status_code=404, detail=f"No data for {symbol}")
+    from services.money_flow import analyze_money_flow
+    return {"symbol": symbol, **analyze_money_flow(df)}
+
+
 # ── Claude Prompt Analyzer ─────────────────────────────────────────────────────
 
 class PromptRequest(BaseModel):
