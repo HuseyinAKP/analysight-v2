@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import {
   Compass, Flame, TrendingUp, TrendingDown, Zap, Target,
-  RefreshCw, ChevronRight, Loader2
+  RefreshCw, ChevronRight, Loader2, Layers, Moon
 } from "lucide-react";
 import { scannerApi, marketApi, ScanResult } from "@/lib/api";
 import { useWatchlist } from "@/hooks/useWatchlist";
@@ -75,6 +75,68 @@ function ScoreRing({ score }: { score: number }) {
         <span className="text-lg font-bold" style={{ color }}>{score}</span>
       </div>
     </div>
+  );
+}
+
+// ── Tematik Listeler ─────────────────────────────────────────────────────────
+
+const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
+const COLOR_MAP: Record<string, string> = {
+  emerald: "bg-emerald-500/10 border-emerald-500/20 text-emerald-400",
+  blue:    "bg-blue-500/10 border-blue-500/20 text-blue-400",
+  yellow:  "bg-yellow-500/10 border-yellow-500/20 text-yellow-400",
+  amber:   "bg-amber-500/10 border-amber-500/20 text-amber-400",
+  purple:  "bg-purple-500/10 border-purple-500/20 text-purple-400",
+  indigo:  "bg-indigo-500/10 border-indigo-500/20 text-indigo-400",
+  orange:  "bg-orange-500/10 border-orange-500/20 text-orange-400",
+  sky:     "bg-sky-500/10 border-sky-500/20 text-sky-400",
+  rose:    "bg-rose-500/10 border-rose-500/20 text-rose-400",
+  green:   "bg-green-500/10 border-green-500/20 text-green-400",
+};
+
+interface Theme {
+  id: string; title: string; emoji: string;
+  description: string; color: string; count: number;
+}
+
+function ThemeCard({ theme }: { theme: Theme }) {
+  const cls = COLOR_MAP[theme.color] ?? COLOR_MAP.blue;
+  return (
+    <Link href={`/kesfet/tema/${theme.id}`}
+      className={cn("flex flex-col gap-2 p-4 rounded-xl border hover:scale-[1.02] transition-transform", cls)}
+    >
+      <div className="text-2xl">{theme.emoji}</div>
+      <div className="font-bold text-sm text-white">{theme.title}</div>
+      <div className="text-[10px] opacity-70 leading-tight">{theme.description}</div>
+      <div className="text-[10px] font-semibold mt-auto opacity-60">{theme.count} hisse →</div>
+    </Link>
+  );
+}
+
+function ThemeSection() {
+  const { data, isLoading } = useQuery({
+    queryKey: ["themes"],
+    queryFn: () => fetch(`${API}/api/themes`).then(r => r.json()) as Promise<{ themes: Theme[] }>,
+    staleTime: 3_600_000,
+  });
+
+  return (
+    <section>
+      <div className="flex items-center gap-2 mb-4">
+        <Layers className="w-4 h-4 text-blue-400" />
+        <h2 className="text-sm font-semibold text-zinc-300 uppercase tracking-wider">Temalar & Kategoriler</h2>
+      </div>
+      {isLoading ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          {[1,2,3,4,5].map(i => <div key={i} className="h-28 rounded-xl bg-zinc-900 animate-pulse" />)}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          {data?.themes.map(t => <ThemeCard key={t.id} theme={t} />)}
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -275,6 +337,9 @@ export default function KesfetPage() {
             </div>
           )}
         </section>
+
+        {/* ── Tematik Listeler (Midas tarzı) ───────────────────────────── */}
+        <ThemeSection />
 
         {/* ── Sektör Isı Haritası ───────────────────────────────────────── */}
         <section>

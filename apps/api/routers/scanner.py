@@ -189,3 +189,110 @@ def tradingview_test(symbol: str):
         "condition": "EMA20 yukarı kesti (test)",
         "timeframe": "1D",
     })
+
+
+# ── Tematik Listeler (Keşfet / Midas tarzı) ───────────────────────────────────
+
+_THEMES = [
+    {
+        "id": "katilim",
+        "title": "Katılım Endeksi",
+        "emoji": "☪️",
+        "description": "BIST Katılım 30 & 100 endeksine uygun hisseler",
+        "color": "emerald",
+        "symbols": ["ASELS","BIMAS","CCOLA","CIMSA","DOAS","EKGYO","ENKAI","EREGL",
+                    "FROTO","GUBRF","HEKTS","KERVT","KORDS","KOZAL","MPARK","OTKAR",
+                    "PGSUS","SASA","SDTTR","SISE","TAVHL","THYAO","TKFEN","TOASO",
+                    "TUPRS","ULKER","VESBE","ZOREN"],
+    },
+    {
+        "id": "savunma_uzay",
+        "title": "Savunma & Uzay",
+        "emoji": "🚀",
+        "description": "Savunma sanayi ve uzay teknolojisi şirketleri",
+        "color": "blue",
+        "symbols": ["ASELS","ROKET","SAVKK","SDTTR","SILVR","KSTUR"],
+    },
+    {
+        "id": "yenilenebilir_enerji",
+        "title": "Yenilenebilir Enerji",
+        "emoji": "⚡",
+        "description": "Güneş, rüzgar ve temiz enerji şirketleri",
+        "color": "yellow",
+        "symbols": ["AKSEN","ZOREN","ODAS","ENKAI","GESAN","KONTR","KARYE","EUPWR"],
+    },
+    {
+        "id": "temettü",
+        "title": "Temettü Şampiyonları",
+        "emoji": "💰",
+        "description": "Yüksek ve düzenli temettü veren şirketler",
+        "color": "amber",
+        "symbols": ["THYAO","EREGL","TUPRS","FROTO","TOASO","SISE","GARAN","AKBNK","KCHOL","ARCLK"],
+    },
+    {
+        "id": "teknoloji",
+        "title": "Teknoloji & Yazılım",
+        "emoji": "💻",
+        "description": "Yerli teknoloji ve yazılım şirketleri",
+        "color": "purple",
+        "symbols": ["ASELS","LOGO","NETAS","SDTTR","INDES","KAREL","MOBTL","NETAŞ","PAPARA"],
+    },
+    {
+        "id": "banka",
+        "title": "Bankacılık Sektörü",
+        "emoji": "🏦",
+        "description": "BIST'teki tüm banka hisseleri",
+        "color": "indigo",
+        "symbols": ["GARAN","AKBNK","ISCTR","YKBNK","HALKB","VAKBN","TSKB","QNBFB"],
+    },
+    {
+        "id": "insaat_gyo",
+        "title": "İnşaat & GYO",
+        "emoji": "🏗️",
+        "description": "Gayrimenkul yatırım ortaklıkları ve inşaat",
+        "color": "orange",
+        "symbols": ["EKGYO","TRGYO","ISGYO","PAGYO","AGYO","MPARK","SURGY"],
+    },
+    {
+        "id": "turizm_havayolu",
+        "title": "Turizm & Havacılık",
+        "emoji": "✈️",
+        "description": "Turizm, otel ve havayolu şirketleri",
+        "color": "sky",
+        "symbols": ["THYAO","PGSUS","TAVHL","CLEBI","MARTI","TUREX","BRYAT"],
+    },
+    {
+        "id": "kucuk_sermaye",
+        "title": "Küçük Ölçekli Fırsatlar",
+        "emoji": "🔭",
+        "description": "Piyasa değeri düşük, büyüme potansiyelli şirketler",
+        "color": "rose",
+        "symbols": ["SDTTR","GESAN","KONTR","BIOEN","CHAOS","EBEBK","DMRGD"],
+    },
+    {
+        "id": "global_gida",
+        "title": "Gıda & İçecek",
+        "emoji": "🍎",
+        "description": "Gıda üretim ve dağıtım şirketleri",
+        "color": "green",
+        "symbols": ["ULKER","CCOLA","AEFES","MGROS","BIMAS","SOKM","KERVT","ACSEL"],
+    },
+]
+
+
+@router.get("/themes")
+def list_themes():
+    """Tematik hisse listelerini döner (Keşfet sayfası için)."""
+    return {"themes": [{"id": t["id"], "title": t["title"], "emoji": t["emoji"],
+                        "description": t["description"], "color": t["color"],
+                        "count": len(t["symbols"])} for t in _THEMES]}
+
+
+@router.get("/themes/{theme_id}")
+def get_theme(theme_id: str):
+    """Belirli bir temanın hisse listesini döner."""
+    theme = next((t for t in _THEMES if t["id"] == theme_id), None)
+    if not theme:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail=f"Theme '{theme_id}' not found")
+    return theme

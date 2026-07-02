@@ -30,6 +30,7 @@ import { EventTimeline }         from "@/components/dashboard/EventTimeline";
 import { PatternMatchPanel }     from "@/components/dashboard/PatternMatchPanel";
 import { ClassicPatternsPanel }  from "@/components/dashboard/ClassicPatternsPanel";
 import { MoneyFlowPanel }        from "@/components/dashboard/MoneyFlowPanel";
+import { KatilimBadge }          from "@/components/dashboard/KatilimBadge";
 import { CompositeScore }        from "@/components/dashboard/CompositeScore";
 import { PineScriptGenerator }   from "@/components/tools/PineScriptGenerator";
 import { ChartVision }           from "@/components/tools/ChartVision";
@@ -117,9 +118,12 @@ export default function SymbolPage({ params }: { params: Promise<{ symbol: strin
       <div className="max-w-screen-xl mx-auto px-4 pt-4 space-y-4">
         {/* Durum şeridi — her sekmede */}
         {indicators && info && <StatBar indicators={indicators} info={info} />}
-        {indicators && scenarios && risk && (
-          <StatusBadges indicators={indicators} scenarios={scenarios} risk={risk} />
-        )}
+        <div className="flex items-center gap-2 flex-wrap">
+          {indicators && scenarios && risk && (
+            <StatusBadges indicators={indicators} scenarios={scenarios} risk={risk} />
+          )}
+          <KatilimBadge symbol={sym} compact />
+        </div>
 
         {/* ══ GRAFİK sekmesi ══════════════════════════════════════════════════ */}
         {tab === "grafik" && (

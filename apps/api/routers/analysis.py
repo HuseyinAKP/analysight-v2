@@ -192,6 +192,14 @@ def get_fundamentals_endpoint(symbol: str):
     return get_fundamentals(symbol)
 
 
+@router.get("/{symbol}/katilim")
+def get_katilim(symbol: str):
+    """BIST Katılım endeksi uygunluk durumu."""
+    symbol = _require_symbol(symbol)
+    from services.katilim import get_katilim_status
+    return {"symbol": symbol, **get_katilim_status(symbol)}
+
+
 @router.get("/{symbol}/money-flow")
 def get_money_flow(symbol: str, days: int = 90):
     """Para giriş-çıkış analizi — OBV, MFI, CMF, hacim spike tespiti."""

@@ -59,6 +59,7 @@ app.include_router(ml_router.router, prefix="/api/ml", tags=["ml"])
 app.include_router(portfolio_router.router, prefix="/api/portfolio", tags=["portfolio"])
 app.include_router(ipo_router.router, prefix="/api/ipo", tags=["ipo"])
 app.include_router(funds_router.router, prefix="/api/funds", tags=["funds"])
+app.include_router(funds_router.router, prefix="/api/funds", tags=["funds"])
 try:
     app.include_router(events_router.router, prefix="/api/events", tags=["events"])
     print("[startup] events router OK")
